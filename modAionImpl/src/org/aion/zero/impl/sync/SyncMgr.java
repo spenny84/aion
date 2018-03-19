@@ -235,21 +235,28 @@ public final class SyncMgr {
         }
 
         _headers.sort((h1, h2) -> (int) (h1.getNumber() - h2.getNumber()));
-        Iterator<A0BlockHeader> it = _headers.iterator();
-        while (it.hasNext()) {
+//        Iterator<A0BlockHeader> it = _headers.iterator();
+//        while (it.hasNext()) {
+//
+//            A0BlockHeader h = it.next();
+//            boolean valid = this.blockHeaderValidator.validate(h);
+//            boolean imported = savedHashes.containsKey(new ByteArrayWrapper(h.getHash()));
+//
+//            // drop all batch
+//            if (!valid) {
+//                return;
+//            }
+//            if (imported) {
+//                it.remove();
+//            }
+//        }
+//
+        boolean anyNonValid = _headers
+                    .parallelStream()
+                    .anyMatch(entry -> !blockHeaderValidator.validate(entry));
 
-            A0BlockHeader h = it.next();
-            boolean valid = this.blockHeaderValidator.validate(h);
-            boolean imported = savedHashes.containsKey(new ByteArrayWrapper(h.getHash()));
-
-            // drop all batch
-            if (!valid) {
-                return;
-            }
-            if (imported) {
-                it.remove();
-            }
-        }
+        if(anyNonValid)
+            return;
 
         importedHeaders.add(new HeadersWrapper(_nodeIdHashcode, _headers));
 

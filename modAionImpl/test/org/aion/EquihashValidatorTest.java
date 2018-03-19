@@ -51,7 +51,6 @@ public class EquihashValidatorTest {
     public void validate(){
         EquiValidator validate = new EquiValidator(210,9);
         OptimizedEquiValidator ov = new OptimizedEquiValidator(210,9);
-        //SimpleEquiValidator simple = SimpleEquiValidator.INSTANCE;
 
         byte[] header = {
                 0, 0, 0, 0, 0, 0, 0, 0,

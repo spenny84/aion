@@ -194,8 +194,8 @@ public class A0BlockHeader extends AbstractBlockHeader implements IPowBlockHeade
         this.energyLimit = toCopy.getEnergyLimit();
     }
 
-    protected A0BlockHeader(byte[] parentHash, Address coinbase, byte[] logsBloom, byte[] difficulty, long number,
-            long timestamp, byte[] extraData, byte[] nonce, byte[] solution, long energyConsumed, long energyLimit) {
+    public A0BlockHeader(byte[] parentHash, Address coinbase, byte[] logsBloom, byte[] difficulty, long number,
+                         long timestamp, byte[] extraData, byte[] nonce, byte[] solution, long energyConsumed, long energyLimit) {
         this.coinbase = coinbase;
         this.parentHash = parentHash;
         this.logsBloom = logsBloom;
