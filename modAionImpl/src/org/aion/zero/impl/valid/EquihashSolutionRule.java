@@ -47,8 +47,11 @@ public class EquihashSolutionRule extends BlockHeaderRule<A0BlockHeader> {
     public boolean validate(A0BlockHeader header) {
         errors.clear();
 
+        System.out.println(header.getHeaderBytes(true).length);
+
         if (!validator.isValidSolution(header.getSolution(), header.getHeaderBytes(true), header.getNonce())) {
             errors.add("Invalid equihash solution contained in block header");
+            System.out.println("Invalid equihash solution contained in block header");
             return false;
         }
         return true;

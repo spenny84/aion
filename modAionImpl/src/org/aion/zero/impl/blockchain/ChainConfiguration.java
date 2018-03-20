@@ -117,8 +117,10 @@ public class ChainConfiguration implements IChainCfg<IAionBlock, AionTransaction
     @Override
     public BlockHeaderValidator<A0BlockHeader> createBlockHeaderValidator() {
         return new BlockHeaderValidator<A0BlockHeader>(Arrays.asList(
-                new AionExtraDataRule(this.getConstants().getMaximumExtraDataSize()), new EnergyConsumedRule(),
-                new AionPOWRule(), new EquihashSolutionRule(this.getEquihashValidator())));
+                new AionExtraDataRule(this.getConstants().getMaximumExtraDataSize()),
+                new EnergyConsumedRule(),
+                new AionPOWRule(),
+                new EquihashSolutionRule(this.getEquihashValidator())));
     }
 
     @Override

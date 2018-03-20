@@ -44,6 +44,7 @@ public class AionExtraDataRule extends BlockHeaderRule<A0BlockHeader> {
         errors.clear();
 
         if (header.getExtraData() != null && header.getExtraData().length > this.maximumExtraDataSize) {
+            System.out.println("Extra data violation");
             errors.add(String.format("extraData (%d) > MAXIMUM_EXTRA_DATA_SIZE (%d)", header.getExtraData().length,
                     this.maximumExtraDataSize));
             return false;

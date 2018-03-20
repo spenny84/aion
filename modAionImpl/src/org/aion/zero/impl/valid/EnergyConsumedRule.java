@@ -37,6 +37,7 @@ public class EnergyConsumedRule extends BlockHeaderRule<A0BlockHeader> {
         errors.clear();
 
         if (blockHeader.getEnergyConsumed() > blockHeader.getEnergyLimit()) {
+            System.out.println("Energy consumed rule");
             errors.add("energyConsumed greater than energyLimit");
             return false;
         }
