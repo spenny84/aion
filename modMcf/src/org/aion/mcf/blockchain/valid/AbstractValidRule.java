@@ -36,6 +36,7 @@ package org.aion.mcf.blockchain.valid;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.slf4j.Logger;
 
@@ -45,10 +46,11 @@ import org.slf4j.Logger;
  */
 public abstract class AbstractValidRule implements IValidRule {
 
-    protected List<String> errors = new LinkedList<>();
+    //protected List<String> errors = new LinkedList<>();
+    protected ConcurrentLinkedQueue<String> errors = new ConcurrentLinkedQueue<>();
 
     @Override
-    public List<String> getErrors() {
+    public ConcurrentLinkedQueue<String> getErrors() {
         return errors;
     }
 

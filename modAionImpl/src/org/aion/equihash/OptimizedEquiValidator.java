@@ -22,6 +22,7 @@ public class OptimizedEquiValidator {
     private int solutionWidth;
     private int indicesHashLength;
     protected static final Logger LOG = AionLoggerFactory.getLogger(LogEnum.CONS.name());
+    HashSet<Integer> indexSet = new HashSet<>(512);
 
     private Blake2b.Param initState;
 
@@ -57,21 +58,17 @@ public class OptimizedEquiValidator {
 
     public boolean isValidSolution(byte[] solution, byte[] blockHeader, byte[] nonce) throws NullPointerException {
         if (solution == null) {
-            System.out.println("Null solution");
             LOG.debug("Null solution passed for validation");
             throw new NullPointerException("Null solution");
         } else if (blockHeader == null) {
-            System.out.println("Null header");
             LOG.debug("Null blockHeader passed for validation");
             throw new NullPointerException("Null blockHeader");
         } else if (nonce == null) {
-            System.out.println("Null nonce");
             LOG.debug("Null nonce passed for validation");
             throw new NullPointerException("Null nonce");
         }
 
         if (solution.length != solutionWidth) {
-            System.out.println("INvalid length");
             LOG.debug("Invalid solution width: {}", solution.length);
             return false;
         }
@@ -80,8 +77,7 @@ public class OptimizedEquiValidator {
 
         int[] indices = getIndicesFromMinimal(solution, collisionBitLength);
 
-        if(hasDuplicate(indices)) {
-            System.out.println("Duplicate indicies");
+        if (hasDuplicate(indices)) {
             LOG.debug("Invalid solution - duplicate solution index");
             return false;
         }
@@ -117,17 +113,16 @@ public class OptimizedEquiValidator {
     }
 
     private boolean verify(byte[] blockHeader, byte[] nonce, Blake2b blake, int[] indices, int index, byte[] hash, int round) {
-        if(round == 0) {
+        if (round == 0) {
             //Generate hash
             genHash(blockHeader, nonce, blake, indices, index, hash);
             return true;
         }
 
-        int index1 = index + (1 << (round-1));
+        int index1 = index + (1 << (round - 1));
 
         // Check out of order indices
-        if(indices[index] >= indices[index1]) {
-            System.out.println("Out of order");
+        if (indices[index] >= indices[index1]) {
             LOG.debug("Invalid solution - indices out of order");
             return false;
         }
@@ -135,43 +130,38 @@ public class OptimizedEquiValidator {
         byte[] hash0 = new byte[indicesHashLength];
         byte[] hash1 = new byte[indicesHashLength];
 
-        boolean verify0 = verify(blockHeader, nonce, blake, indices, index, hash0, round-1);
-        if(!verify0) {
-            System.out.println("verify0");
+        boolean verify0 = verify(blockHeader, nonce, blake, indices, index, hash0, round - 1);
+        if (!verify0) {
             LOG.debug("Invalid verify0");
             return false;
         }
 
-        boolean verify1 = verify(blockHeader, nonce, blake, indices, index1, hash1, round-1);
-        if(!verify1) {
-            System.out.println("Verify1");
+        boolean verify1 = verify(blockHeader, nonce, blake, indices, index1, hash1, round - 1);
+        if (!verify1) {
             LOG.debug("Invalid verify1");
             return false;
         }
 
-        for(int i = 0; i < indicesHashLength; i++)
-            hash[i] = (byte)(hash0[i] ^ hash1[i]);
+        for (int i = 0; i < indicesHashLength; i++)
+            hash[i] = (byte) (hash0[i] ^ hash1[i]);
 
         int bits = (round < k ? round * collisionBitLength : n);
 
-        for(int i = 0; i < bits/8; i++) {
-            if(hash[i] != 0) {
-                System.out.println("Non-zero");
+        for (int i = 0; i < bits / 8; i++) {
+            if (hash[i] != 0) {
                 LOG.debug("Non-zero XOR");
                 return false;
             }
         }
 
         // Try skipping b%8 check for now
-        if((bits%8) > 0 && (hash[bits/8] >> (8 - (bits%8)) ) != 0) {
-            LOG.debug("Non-zero XOR");
+        if ((bits % 8) > 0 && (hash[bits / 8] >> (8 - (bits % 8))) != 0) {
             System.out.println("Non-zero");
             return false;
         }
 
-        if(round == k) {
-            if(hash[indicesHashLength - 1] >> 6 > 0) {
-                LOG.debug("Non-zero XOR");
+        if (round == k) {
+            if (hash[indicesHashLength - 1] >> 6 > 0) {
                 System.out.println("Non-zero");
                 return false;
             }
@@ -205,14 +195,24 @@ public class OptimizedEquiValidator {
 
     /*
      * Check if duplicates are present in the solutions index array
+     * Set initial capacity of index
      */
     private boolean hasDuplicate(int[] indices) {
-        HashSet<Integer> indexSet = new HashSet<>();
-        for(int index: indices) {
-            if(!indexSet.add(index))
+//        for(int index: indices) {
+//            if(!indexSet.add(index))
+//                return true;
+//        }
+//        indexSet.clear();
+//
+//        return false;
+
+        int[] cpy = Arrays.copyOfRange(indices, 0, indices.length);
+        Arrays.sort(cpy);
+        for (int i = 1; i < indices.length; i++) {
+            if (cpy[i] <= cpy[i - 1])
                 return true;
+
         }
-        indexSet.clear();
 
         return false;
     }

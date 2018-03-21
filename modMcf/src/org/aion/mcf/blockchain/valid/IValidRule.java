@@ -35,6 +35,7 @@
 package org.aion.mcf.blockchain.valid;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Valication rules interface.
@@ -47,6 +48,6 @@ public interface IValidRule {
      *
      * @return list of errors
      */
-    List<String> getErrors();
+    ConcurrentLinkedQueue<String> getErrors();
 
 }

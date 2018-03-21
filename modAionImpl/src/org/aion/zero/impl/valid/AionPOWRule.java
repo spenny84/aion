@@ -45,7 +45,6 @@ public class AionPOWRule extends BlockHeaderRule<A0BlockHeader> {
         if (hash.compareTo(boundary) >= 0) {
             errors.add(
                     String.format("solution %s violates boundary condition %s", hash.toString(), boundary.toString()));
-            System.out.println("PoW " + hash + " \n    " + boundary);
             return false;
         }
         return true;
