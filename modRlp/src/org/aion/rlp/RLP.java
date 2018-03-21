@@ -847,16 +847,32 @@ public class RLP {
                 ++byteNum;
                 tmpLength = tmpLength >> 8;
             }
-            byte[] lenBytes = new byte[byteNum];
-            for (int i = 0; i < byteNum; ++i) {
-                lenBytes[byteNum - 1 - i] = (byte) ((srcData.length >> (8 * i)) & 0xFF);
-            }
-            // first byte = F7 + bytes.length
+//            byte[] lenBytes = new byte[byteNum];
+//            for (int i = 0; i < byteNum; ++i) {
+//                lenBytes[byteNum - 1 - i] = (byte) ((srcData.length >> (8 * i)) & 0xFF);
+//            }
+//            // first byte = F7 + bytes.length
+//
+//            byte[] data = new byte[srcData.length + 1 + byteNum];
+//            System.arraycopy(srcData, 0, data, 1 + byteNum, srcData.length);
+//            data[0] = (byte) (OFFSET_LONG_ITEM + byteNum);
+//            System.arraycopy(lenBytes, 0, data, 1, lenBytes.length);
 
+
+            /*
+            * Data = [0xBX, x1, .. xn, srcData]
+            * X = 7 + byteNum (Number of bytes used to represent length of string)
+            * x1 ... xn bytes of the length of the string
+            *
+            * Write directly to the data array to avoid allocating a new byte array, copying it later and throwing it away.
+            *
+             */
             byte[] data = new byte[srcData.length + 1 + byteNum];
-            System.arraycopy(srcData, 0, data, 1 + byteNum, srcData.length);
             data[0] = (byte) (OFFSET_LONG_ITEM + byteNum);
-            System.arraycopy(lenBytes, 0, data, 1, lenBytes.length);
+            for(int i = 0; i < byteNum; i++) {
+                data[i+1] = (byte) ((srcData.length >> (8 * i)) & 0xFF);
+            }
+            System.arraycopy(srcData, 0, data, 1 + byteNum, srcData.length);
 
             return data;
         }
@@ -1014,19 +1030,36 @@ public class RLP {
                 tmpLength = tmpLength >> 8;
             }
             tmpLength = totalLength;
-            byte[] lenBytes = new byte[byteNum];
-            for (int i = 0; i < byteNum; ++i) {
-                lenBytes[byteNum - 1 - i] = (byte) ((tmpLength >> (8 * i)) & 0xFF);
-            }
-            // first byte = F7 + bytes.length
-            data = new byte[1 + lenBytes.length + totalLength];
-            data[0] = (byte) (OFFSET_LONG_LIST + byteNum);
-            System.arraycopy(lenBytes, 0, data, 1, lenBytes.length);
 
-            copyPos = lenBytes.length + 1;
+
+//            byte[] lenBytes = new byte[byteNum];
+//            for (int i = 0; i < byteNum; ++i) {
+//                lenBytes[byteNum - 1 - i] = (byte) ((tmpLength >> (8 * i)) & 0xFF);
+//            }
+//            // first byte = F7 + bytes.length
+//            data = new byte[1 + lenBytes.length + totalLength];
+//            data[0] = (byte) (OFFSET_LONG_LIST + byteNum);
+//            System.arraycopy(lenBytes, 0, data, 1, lenBytes.length);
+//
+//            copyPos = lenBytes.length + 1;
+
+            /*
+             * Data = [0xCX, + length + rlp1, rlp2, rlp3, ....]
+             * X = 0 + (Number of bytes used to represent length of lists)
+             * rlp1 .. rlpx rlp encodings of each list
+             *
+             * Write directly to the data array to avoid allocating a new byte array, copying it later and throwing it away.
+             *
+             */
+            data = new byte[1 + byteNum + totalLength];
+            data[0] = (byte) (OFFSET_LONG_LIST + byteNum);
+            for(int i = 0; i < byteNum; i++) {
+                data[i+1] = (byte) ((tmpLength >> (8 * i)) & 0xFF);
+            }
+            copyPos = byteNum + 1;
         }
         for (byte[] element : elements) {
-            System.arraycopy(element, 0, data, copyPos, element.length);
+            System.arraycopy(element, 0, data, copyPos , element.length);
             copyPos += element.length;
         }
         return data;
