@@ -34,9 +34,10 @@
  ******************************************************************************/
 package org.aion.rlp;
 
-import org.aion.base.util.ByteArrayWrapper;
-import org.aion.base.util.ByteUtil;
-import org.aion.base.util.Hex;
+import static java.util.Arrays.copyOfRange;
+import static org.aion.base.util.ByteUtil.*;
+import static org.aion.rlp.Utils.asUnsignedByteArray;
+import static org.aion.rlp.Utils.concatenate;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -45,16 +46,15 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 
-import static java.util.Arrays.copyOfRange;
-import static org.aion.base.util.ByteUtil.*;
-import static org.aion.rlp.Utils.asUnsignedByteArray;
-import static org.aion.rlp.Utils.concatenate;
+import org.aion.base.util.ByteArrayWrapper;
+import org.aion.base.util.ByteUtil;
+import org.aion.base.util.Hex;
 
 /**
  * @author Roman Mandeleil 2014
  * @author modified by aion 2017
  */
-public class RLP {
+public class RLP_old {
 
     // private static final Logger logger = LoggerFactory.getLogger("rlp");
     /**
