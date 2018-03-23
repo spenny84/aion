@@ -36,7 +36,7 @@ package org.aion.zero.impl;
 
 import org.aion.base.type.Address;
 import org.aion.mcf.blockchain.IBlockConstants;
-import org.aion.zero.api.BlockConstants;
+import org.aion.mcf.blockchain.BlockConstants;
 import org.aion.zero.impl.types.AionBlock;
 import org.aion.mcf.core.ImportResult;
 import org.junit.Ignore;

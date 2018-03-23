@@ -34,8 +34,7 @@
  ******************************************************************************/
 package org.aion.zero.impl.core;
 
-import org.aion.zero.api.BlockConstants;
-import org.aion.zero.impl.core.DiffCalc;
+import org.aion.mcf.blockchain.BlockConstants;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

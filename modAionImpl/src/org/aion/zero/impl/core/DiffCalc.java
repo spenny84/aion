@@ -30,8 +30,7 @@ import static org.aion.base.util.BIUtil.min;
 import java.math.BigInteger;
 
 import org.aion.mcf.blockchain.IBlockConstants;
-import org.aion.zero.api.BlockConstants;
-import org.aion.zero.impl.blockchain.ChainConfiguration;
+import org.aion.mcf.blockchain.BlockConstants;
 import org.aion.mcf.types.AbstractBlockHeader;
 
 public class DiffCalc {

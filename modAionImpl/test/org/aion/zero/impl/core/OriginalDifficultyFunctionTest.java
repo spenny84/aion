@@ -38,8 +38,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.aion.zero.api.BlockConstants;
-import org.aion.zero.impl.core.DiffCalc;
+import org.aion.mcf.blockchain.BlockConstants;
 import org.aion.mcf.types.AbstractBlockHeader;
 import org.junit.runner.RunWith;
 import org.junit.Before;

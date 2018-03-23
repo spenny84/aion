@@ -40,8 +40,7 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.aion.zero.api.BlockConstants;
-import org.aion.zero.impl.blockchain.ChainConfiguration;
+import org.aion.mcf.blockchain.BlockConstants;
 import org.aion.zero.types.A0BlockHeader;
 import org.junit.Before;
 import org.junit.Test;

@@ -34,8 +34,7 @@
  ******************************************************************************/
 package org.aion.zero.impl.valid;
 
-import org.aion.zero.api.BlockConstants;
-import org.aion.zero.impl.valid.EnergyLimitRule;
+import org.aion.mcf.blockchain.BlockConstants;
 import org.aion.zero.types.A0BlockHeader;
 import org.junit.Test;
 

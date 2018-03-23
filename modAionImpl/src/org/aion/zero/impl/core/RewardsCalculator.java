@@ -26,7 +26,7 @@ package org.aion.zero.impl.core;
 
 import java.math.BigInteger;
 
-import org.aion.zero.api.BlockConstants;
+import org.aion.mcf.blockchain.BlockConstants;
 import org.aion.mcf.types.AbstractBlockHeader;
 
 /**
