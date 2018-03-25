@@ -83,7 +83,7 @@ import org.aion.rlp.Value;
  * @author Nick Savers
  * @since 20.05.2014
  */
-public class TrieImpl implements Trie {
+public class TrieImpl_old implements Trie {
     private static byte PAIR_SIZE = 2;
     private static byte LIST_SIZE = 17;
     private static int MAX_SIZE = 20;
@@ -95,11 +95,11 @@ public class TrieImpl implements Trie {
 
     private boolean pruningEnabled;
 
-    public TrieImpl(IByteArrayKeyValueStore db) {
+    public TrieImpl_old(IByteArrayKeyValueStore db) {
         this(db, "");
     }
 
-    public TrieImpl(IByteArrayKeyValueStore db, Object root) {
+    public TrieImpl_old(IByteArrayKeyValueStore db, Object root) {
         this.cache = new Cache(db);
         this.root = root;
         this.prevRoot = root;
@@ -154,7 +154,7 @@ public class TrieImpl implements Trie {
         return pruningEnabled;
     }
 
-    public TrieImpl withPruningEnabled(boolean pruningEnabled) {
+    public TrieImpl_old withPruningEnabled(boolean pruningEnabled) {
         this.pruningEnabled = pruningEnabled;
         return this;
     }
@@ -520,9 +520,9 @@ public class TrieImpl implements Trie {
     }
 
     // Returns a copy of this trie
-    public TrieImpl copy() {
+    public TrieImpl_old copy() {
         synchronized (cache) {
-            TrieImpl trie = new TrieImpl(this.cache.getDb(), this.root);
+            TrieImpl_old trie = new TrieImpl_old(this.cache.getDb(), this.root);
             for (ByteArrayWrapper key : this.cache.getNodes().keySet()) {
                 Node node = this.cache.getNodes().get(key);
                 trie.cache.getNodes().put(key, node.copy());
@@ -703,6 +703,8 @@ public class TrieImpl implements Trie {
                         valBytes.length);
                 k_2 += valBytes.length;
             }
+
+
 
             return rlpData;
         }
