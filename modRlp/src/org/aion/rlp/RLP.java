@@ -883,17 +883,6 @@ public class RLP {
                 ++byteNum;
                 tmpLength = tmpLength >> 8;
             }
-//            byte[] lenBytes = new byte[byteNum];
-//            for (int i = 0; i < byteNum; ++i) {
-//                lenBytes[byteNum - 1 - i] = (byte) ((srcData.length >> (8 * i)) & 0xFF);
-//            }
-//            // first byte = F7 + bytes.length
-//
-//            byte[] data = new byte[srcData.length + 1 + byteNum];
-//            System.arraycopy(srcData, 0, data, 1 + byteNum, srcData.length);
-//            data[0] = (byte) (OFFSET_LONG_ITEM + byteNum);
-//            System.arraycopy(lenBytes, 0, data, 1, lenBytes.length);
-
 
             /*
              * Data = [0xBX, x1, .. xn, srcData]
@@ -912,6 +901,51 @@ public class RLP {
 
             return data;
         }
+    }
+
+    public static int encodeElement(byte[] srcData, byte[] outputArray, int pos) {
+
+        if (isNullOrZeroArray(srcData)) {
+            outputArray[pos] = (byte) OFFSET_SHORT_ITEM;
+            pos++;
+        } else if (isSingleZero(srcData)) {
+            outputArray[pos] = srcData[0];
+            pos++;
+            return pos;
+        } else if (srcData.length == 1 && (srcData[0] & 0xFF) < 0x80) {
+            outputArray[pos] = srcData[0];
+            pos++;
+            return pos;
+        } else if (srcData.length < SIZE_THRESHOLD) {
+            // length = 8X
+            byte length = (byte) (OFFSET_SHORT_ITEM + srcData.length);
+
+            outputArray[pos] = length;
+            pos++;
+            System.arraycopy(srcData, 0, outputArray, pos, srcData.length);
+            pos += srcData.length;
+        } else {
+            // length of length = BX
+            // prefix = [BX, [length]]
+            int tmpLength = srcData.length;
+            byte byteNum = 0;
+            while (tmpLength != 0) {
+                ++byteNum;
+                tmpLength = tmpLength >> 8;
+            }
+
+            outputArray[pos] = (byte) (OFFSET_LONG_ITEM + byteNum);
+            pos++;
+
+            for(int i = 0; i < byteNum; i++) {
+                outputArray[pos] = (byte) ((srcData.length >> (8 * i)) & 0xFF);
+                pos++;
+            }
+            System.arraycopy(srcData, 0, outputArray, pos, srcData.length);
+            pos += srcData.length;
+        }
+
+        return pos;
     }
 
     public static int calcElementPrefixSize(byte[] srcData) {
@@ -948,8 +982,29 @@ public class RLP {
                 ++byteNum;
                 tmpLength = tmpLength >> 8;
             }
-            return byteNum;
+            return byteNum + 1;
         }
+    }
+
+    public static int encodeListHeader(int size, int hdrSize, byte[] outputArray, int pos) {
+        if(size == 0) {
+            outputArray[pos] = (byte) OFFSET_SHORT_LIST;
+            pos++;
+        } else if (size < SIZE_THRESHOLD) {
+            outputArray[pos] = (byte)(OFFSET_SHORT_LIST + size);
+            pos++;
+        }else {
+            outputArray[pos] = (byte) (OFFSET_LONG_LIST + hdrSize-1);
+            pos++;
+            int len = hdrSize;
+            int initalPos = pos;
+            for(int i = 0; i < hdrSize-1; i++) {
+                //Match original definition for position - (initalPos-1) would point to the original array index
+                outputArray[(initalPos - 1) + len - 1 - i] = (byte) ((size >> (8 * i)) & 0xFF);
+                pos++;
+            }
+        }
+        return pos;
     }
 
     public static byte[] encodeListHeader(int size) {
@@ -977,6 +1032,8 @@ public class RLP {
 
             header = new byte[1 + byteNum];
             header[0] = (byte) (OFFSET_LONG_LIST + byteNum);
+            System.out.println("HeaderLen_old: " + header.length);
+
             for(int i = 0; i < byteNum; i++) {
                 header[header.length - 1 - i] = (byte) ((totalLength >> (8 * i)) & 0xFF);
             }
@@ -986,56 +1043,6 @@ public class RLP {
         return header;
     }
 
-//    public static int encodeListHeaderInArray(int size, byte[] outputArray, int pos) {
-//
-//        int currentArrayPos = pos;
-//
-//        if (size == 0) {
-//
-//            outputArray[pos] = (byte) OFFSET_SHORT_LIST;
-//
-////            return new byte[] { (byte) OFFSET_SHORT_LIST };
-//        }
-//
-//        int totalLength = size;
-//
-//        if (totalLength < SIZE_THRESHOLD) {
-//
-//            outputArray[pos] = (byte) (OFFSET_SHORT_LIST + totalLength);
-////            header = new byte[1];
-////            header[0] = (byte) (OFFSET_SHORT_LIST + totalLength);
-//        } else {
-//            // length of length = BX
-//            // prefix = [BX, [length]]
-//            int tmpLength = totalLength;
-//            byte byteNum = 0;
-//            while (tmpLength != 0) {
-//                ++byteNum;
-//                tmpLength = tmpLength >> 8;
-//            }
-//            tmpLength = totalLength;
-//
-//            outputArray[currentArrayPos] = (byte) (OFFSET_LONG_LIST + byteNum);
-//            pos++;
-//            for(int i = 0; i < byteNum; i++) {
-//                outputArray[currentArrayPos] = (byte) ((tmpLength >> (8 * i)) & 0xFF);
-//                currentArrayPos++;
-//            }
-//
-////            byte[] lenBytes = new byte[byteNum];
-////            for (int i = 0; i < byteNum; ++i) {
-////                lenBytes[byteNum - 1 - i] = (byte) ((tmpLength >> (8 * i)) & 0xFF);
-////            }
-////            // first byte = F7 + bytes.length
-////            header = new byte[1 + lenBytes.length];
-////            header[0] = (byte) (OFFSET_LONG_LIST + byteNum);
-////            System.arraycopy(lenBytes, 0, header, 1, lenBytes.length);
-//
-//        }
-//
-//        return currentArrayPos;
-//    }
-
     public static int getEncodeLongElementHeaderLength(int length) {
         if(length < SIZE_THRESHOLD) {
             return 1;
@@ -1043,10 +1050,12 @@ public class RLP {
             int tmpLength = length;
             byte byteNum = 0;
             while (tmpLength != 0) {
+                System.out.println("tmpLen: " + tmpLength);
                 ++byteNum;
                 tmpLength = tmpLength >> 8;
             }
-            return byteNum;
+            System.out.println("byteNum new: " + byteNum);
+            return byteNum + 1;
         }
     }
 
@@ -1055,10 +1064,9 @@ public class RLP {
      * @param length
      * @return
      */
-    public static int encodeLongElementHeader(int length, int byteNum, byte[] outputArray, int pos) {
+    public static int encodeLongElementHeader(int length, int hdrSize, byte[] outputArray, int pos) {
 
         if (length < SIZE_THRESHOLD) {
-
             if (length == 0) {
                 outputArray[pos] = (byte) 0x80;
                 return pos+1;
@@ -1066,26 +1074,16 @@ public class RLP {
                 outputArray[pos] = (byte) (0x80 + length);
                 return pos+1;
             }
-
         } else {
 
-//            int tmpLength = length;
-//            byte byteNum = 0;
-//            while (tmpLength != 0) {
-//                ++byteNum;
-//                tmpLength = tmpLength >> 8;
-//            }
-//
-//            byte[] header = new byte[1 + byteNum];
-//            header[0] = (byte) (OFFSET_LONG_ITEM + byteNum);
-            int hdrLen = 1 + byteNum;
-            outputArray[pos] = (byte)(OFFSET_LONG_ITEM + byteNum);
+            outputArray[pos] = (byte)(OFFSET_LONG_ITEM + hdrSize-1);
+            int len = hdrSize;
             pos++;
-            for(int i = 0; i < byteNum; i++) {
-                outputArray[pos + hdrLen - 1 - i] = (byte) ((length >> (8 * i)) & 0xFF);
+            int initPos = pos;
+            for(int i = 0; i < hdrSize-1; i++) {
+                outputArray[(initPos-1) + len - 1 - i] = (byte) ((length >> (8 * i)) & 0xFF);
                 pos++;
             }
-
             return pos;
         }
     }
@@ -1108,6 +1106,8 @@ public class RLP {
                 ++byteNum;
                 tmpLength = tmpLength >> 8;
             }
+
+            System.out.println("encodeLongElementHeader byteNum OLD: " + byteNum);
 
             byte[] header = new byte[1 + byteNum];
             header[0] = (byte) (OFFSET_LONG_ITEM + byteNum);

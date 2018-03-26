@@ -37,6 +37,7 @@ import static java.util.Arrays.copyOfRange;
 import static org.aion.base.util.ByteArrayWrapper.wrap;
 import static org.aion.base.util.ByteUtil.EMPTY_BYTE_ARRAY;
 import static org.aion.base.util.ByteUtil.matchingNibbleLength;
+import static org.aion.base.util.ByteUtil.toHexString;
 import static org.aion.crypto.HashUtil.EMPTY_TRIE_HASH;
 import static org.aion.rlp.CompactEncoder.*;
 import static org.aion.rlp.RLP.calcElementPrefixSize;
@@ -668,16 +669,108 @@ public class TrieImpl implements Trie {
 //            byte[] rlpData = new byte[keysTotalSize + keysHeader.length + valsTotalSize + valsHeader.length
 //                    + listHeader.length + root.length];
 
+            System.out.println("KeysTotalSize_new " + keysTotalSize);
+            System.out.println("keysHeaderSize_new " + keysHeaderSize);
+            System.out.println("valsTotalSize_new " + valsTotalSize);
+            System.out.println("valsHeaderSize_new " + valsHeaderSize);
+            System.out.println("listHeaderSize_new " + listHeaderSize);
+            System.out.println("root_new " + root.length);
+
+
             byte[] rlpData = new byte[keysTotalSize + keysHeaderSize + valsTotalSize + valsHeaderSize
                     + listHeaderSize + root.length];
 
             // Fill in rlpData
             int pos = 0;
+            pos = RLP.encodeListHeader(keysTotalSize + keysHeaderSize
+                    + valsTotalSize + valsHeaderSize +
+                    root.length,listHeaderSize, rlpData, pos );
             pos = RLP.encodeLongElementHeader(keysTotalSize, keysHeaderSize, rlpData, pos);
 
-            // copy headers:
-            // [ rlp_list_header, rlp_keys_header, rlp_keys, rlp_vals_header,
-            // rlp_val]
+            int valsPos = (listHeaderSize + keysHeaderSize + keysTotalSize);
+            RLP.encodeListHeader(valsTotalSize, valsHeaderSize, rlpData, valsPos);
+
+            int rootPos = (listHeaderSize + keysHeaderSize + keysTotalSize + valsTotalSize + valsHeaderSize);
+            System.arraycopy(root, 0, rlpData, rootPos, root.length);
+
+            int k_2=listHeaderSize+keysHeaderSize+keysTotalSize+valsHeaderSize;
+            for(ByteArrayWrapper key: keys){
+                Node node = map.get(key);
+
+                if(node == null) {
+                    continue;
+                }
+
+                System.arraycopy(key.getData(),0, rlpData, pos, key.getData().length);
+                pos += key.getData().length;
+//                byte[] valBytes = RLP.encodeElement(node.getValue().getData());
+//
+//                System.arraycopy(valBytes, 0, rlpData,
+//                        listHeaderSize+keysHeaderSize+keysTotalSize+valsHeaderSize+k_2,
+//                        valBytes.length);
+                System.out.println(k_2);
+                k_2 = RLP.encodeElement(node.getValue().getData(), rlpData, k_2);
+
+                //k_2 += valBytes.length;
+            }
+
+            return rlpData;
+        }
+    }
+
+    public byte[] serialize_old() {
+
+        synchronized (cache) {
+            Map<ByteArrayWrapper, Node> map = getCache().getNodes();
+
+            int keysTotalSize = 0;
+            int valsTotalSize = 0;
+
+            Set<ByteArrayWrapper> keys = map.keySet();
+            for (ByteArrayWrapper key : keys) {
+                Node node = map.get(key);
+                if (node == null) {
+                    continue;
+                }
+
+                byte[] keyBytes = key.getData();
+                keysTotalSize += keyBytes.length;
+
+                byte[] valBytes = node.getValue().getData();
+                valsTotalSize += valBytes.length + calcElementPrefixSize(valBytes);
+            }
+
+            byte[] root = null;
+            try {
+                ByteArrayOutputStream b = new ByteArrayOutputStream();
+                ObjectOutputStream o = new ObjectOutputStream(b);
+                o.writeObject(this.getRoot());
+                root = b.toByteArray();
+                root = RLP.encodeElement(root);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            byte[] keysHeader = RLP.encodeLongElementHeader(keysTotalSize);
+            byte[] valsHeader = RLP.encodeListHeader(valsTotalSize);
+            byte[] listHeader = RLP.encodeListHeader(
+                    keysTotalSize + keysHeader.length + valsTotalSize + valsHeader.length + root.length);
+//            return valsHeader;
+//
+            byte[] rlpData = new byte[keysTotalSize + keysHeader.length + valsTotalSize + valsHeader.length
+                    + listHeader.length + root.length];
+//
+//            System.out.println("KeysTotalSize_old " + keysTotalSize);
+//            System.out.println("keysHeaderSize_old " + keysHeader.length);
+//            System.out.println("valsTotalSize_old " + valsTotalSize);
+//            System.out.println("valsHeaderSize_old " + valsHeader.length);
+//            System.out.println("listHeaderSize_old " + listHeader.length);
+//            System.out.println("root_new " + root.length);
+//
+//
+//            // copy headers:
+//            // [ rlp_list_header, rlp_keys_header, rlp_keys, rlp_vals_header,
+//            // rlp_val]
             System.arraycopy(listHeader, 0, rlpData, 0, listHeader.length);
             System.arraycopy(keysHeader, 0, rlpData, listHeader.length, keysHeader.length);
             System.arraycopy(valsHeader, 0, rlpData, (listHeader.length + keysHeader.length + keysTotalSize),
