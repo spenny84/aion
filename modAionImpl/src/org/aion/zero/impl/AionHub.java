@@ -43,15 +43,16 @@ import org.aion.mcf.vm.types.DataWord;
 import org.aion.p2p.Handler;
 import org.aion.p2p.IP2pMgr;
 import org.aion.p2p.impl.P2pMgr;
+import org.aion.utils.TaskDumpHeap;
+import org.aion.utils.TaskDumpThreadsAndBlocks;
 import org.aion.vm.PrecompiledContracts;
 import org.aion.zero.impl.blockchain.AionPendingStateImpl;
 import org.aion.zero.impl.blockchain.ChainConfiguration;
-import org.aion.zero.impl.blockchain.NonceMgr;
 import org.aion.zero.impl.config.CfgAion;
 import org.aion.zero.impl.core.IAionBlockchain;
 import org.aion.zero.impl.db.AionRepositoryImpl;
 import org.aion.zero.impl.pow.AionPoW;
-import org.aion.zero.impl.sync.BlockPropagationHandler;
+import org.aion.zero.impl.sync.handler.BlockPropagationHandler;
 import org.aion.zero.impl.sync.handler.BroadcastNewBlockHandler;
 import org.aion.zero.impl.sync.SyncMgr;
 import org.aion.zero.impl.sync.handler.*;
@@ -62,8 +63,10 @@ import org.aion.zero.types.AionTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.aion.crypto.HashUtil.EMPTY_TRIE_HASH;
 
@@ -93,6 +96,8 @@ public class AionHub {
     private IEventMgr eventMgr;
 
     private AionPoW pow;
+
+    private AtomicBoolean start = new AtomicBoolean(true);
 
     /**
      * A "cached" block that represents our local best block when the
@@ -128,29 +133,33 @@ public class AionHub {
 
         this.mempool = AionPendingStateImpl.inst();
 
-        // nonceMgr init after the repo and the tx pending pool were inited!
-        blockchain.setNonceMgr(NonceMgr.inst());
-
         this.txThread = AionTransactionExecThread.getInstance();
 
         loadBlockchain();
 
         this.startingBlock = this.blockchain.getBestBlock();
 
+        String reportsFolder = "";
+        if (cfg.getReports().isEnabled()) {
+            File rpf = new File(cfg.getBasePath(), cfg.getReports().getPath());
+            rpf.mkdirs();
+            reportsFolder = rpf.getAbsolutePath();
+        }
+
         /*
          * p2p hook up start sync mgr needs to be initialed after
          * loadBlockchain() method
          */
         CfgNetP2p cfgNetP2p = this.cfg.getNet().getP2p();
-        this.p2pMgr = new P2pMgr(
-                this.cfg.getNet().getId(), Version.KERNEL_VERSION,
-                this.cfg.getId(), cfgNetP2p.getIp(), cfgNetP2p.getPort(), this.cfg.getNet().getNodes(),
-                cfgNetP2p.getDiscover(), 128, 128, cfgNetP2p.getShowStatus(),
-                cfgNetP2p.getShowLog(), cfgNetP2p.getBootlistSyncOnly());
+        this.p2pMgr = new P2pMgr(this.cfg.getNet().getId(), Version.KERNEL_VERSION, this.cfg.getId(), cfgNetP2p.getIp(),
+                cfgNetP2p.getPort(), this.cfg.getNet().getNodes(), cfgNetP2p.getDiscover(), 128, 128,
+                cfgNetP2p.getShowStatus(), cfgNetP2p.getShowLog(), cfgNetP2p.getBootlistSyncOnly(),
+                this.cfg.getReports().isEnabled(), reportsFolder);
 
         this.syncMgr = SyncMgr.inst();
         this.syncMgr.init(this.p2pMgr, this.eventMgr, this.cfg.getSync().getBlocksImportMax(),
-                this.cfg.getSync().getBlocksQueueMax(), this.cfg.getSync().getShowStatus());
+                this.cfg.getSync().getBlocksQueueMax(), this.cfg.getSync().getShowStatus(),
+                this.cfg.getReports().isEnabled(), reportsFolder);
 
         ChainConfiguration chainConfig = new ChainConfiguration();
         this.propHandler = new BlockPropagationHandler(1024,
@@ -163,15 +172,26 @@ public class AionHub {
 
         this.pow = new AionPoW();
         this.pow.init(blockchain, mempool, eventMgr);
+
+        if (cfg.getReports().isEnabled()) {
+            new Thread(new TaskDumpThreadsAndBlocks(this.start, cfg.getReports().getDumpInterval(),
+                    blockchain.getBlockStore(), cfg.getReports().getBlockFrequency(), reportsFolder), "dump-threads-and-blocks")
+                    .start();
+        }
+
+        if (cfg.getReports().isHeapDumpEnabled()) {
+            new Thread(new TaskDumpHeap(this.start, cfg.getReports().getHeapDumpInterval(), reportsFolder), "dump-heap")
+                    .start();
+        }
     }
 
     private void registerCallback() {
         List<Handler> cbs = new ArrayList<>();
         cbs.add(new ReqStatusHandler(syncLog, this.blockchain, this.p2pMgr, cfg.getGenesis().getHash()));
         cbs.add(new ResStatusHandler(syncLog, this.p2pMgr, this.syncMgr));
-        cbs.add(new ReqBlocksHeadersHandler(syncLog, this.blockchain, this.p2pMgr));
+        cbs.add(new ReqBlocksHeadersHandler(syncLog, this.blockchain, this.p2pMgr, cfg.getSync().getBlocksImportMax()));
         cbs.add(new ResBlocksHeadersHandler(syncLog, this.syncMgr));
-        cbs.add(new ReqBlocksBodiesHandler(syncLog, this.blockchain, this.p2pMgr));
+        cbs.add(new ReqBlocksBodiesHandler(syncLog, this.blockchain, this.p2pMgr, cfg.getSync().getBlocksImportMax()));
         cbs.add(new ResBlocksBodiesHandler(syncLog, this.syncMgr));
         cbs.add(new BroadcastTxHandler(syncLog, this.mempool, this.p2pMgr));
         cbs.add(new BroadcastNewBlockHandler(syncLog, this.propHandler));
@@ -374,6 +394,8 @@ public class AionHub {
             repository.close();
             LOG.info("shutdown DB... Done!");
         }
+
+        this.start.set(false);
     }
 
     public SyncMgr getSyncMgr() {

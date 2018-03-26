@@ -36,6 +36,7 @@
 package org.aion.zero.impl.sync.handler;
 
 import java.util.List;
+import org.aion.mcf.types.BlockIdentifier;
 import org.aion.zero.impl.core.IAionBlockchain;
 import org.aion.p2p.Ctrl;
 import org.aion.p2p.Handler;
@@ -44,8 +45,8 @@ import org.aion.p2p.Ver;
 import org.aion.zero.impl.sync.Act;
 import org.aion.zero.impl.sync.msg.ReqBlocksHeaders;
 import org.aion.zero.impl.sync.msg.ResBlocksHeaders;
-import org.aion.mcf.types.BlockIdentifier;
 import org.aion.zero.types.A0BlockHeader;
+//import org.apache.commons.collections4.map.LRUMap;
 import org.slf4j.Logger;
 
 /**
@@ -56,22 +57,22 @@ import org.slf4j.Logger;
  */
 public final class ReqBlocksHeadersHandler extends Handler {
 
-    /**
-     * self guardian
-     */
-    private final static int max_headers = 2000;
-
     private final Logger log;
+
+    private final int max;
 
     private final IAionBlockchain blockchain;
 
     private final IP2pMgr p2pMgr;
 
-    public ReqBlocksHeadersHandler(final Logger _log, final IAionBlockchain _blockchain, final IP2pMgr _p2pMgr) {
+    //private final Map<Long, A0BlockHeader> cache = Collections.synchronizedMap(new LRUMap<>(1024));
+
+    public ReqBlocksHeadersHandler(final Logger _log, final IAionBlockchain _blockchain, final IP2pMgr _p2pMgr, int _max) {
         super(Ver.V0, Ctrl.SYNC, Act.REQ_BLOCKS_HEADERS);
         this.log = _log;
         this.blockchain = _blockchain;
         this.p2pMgr = _p2pMgr;
+        this.max = _max;
     }
 
     @Override
@@ -83,11 +84,60 @@ public final class ReqBlocksHeadersHandler extends Handler {
             this.log.debug("<req-headers from-block={} take={} from-node={}>", fromBlock, take,
                     _displayId);
             List<A0BlockHeader> headers = this.blockchain.getListOfHeadersStartFrom(
-                    new BlockIdentifier(null, fromBlock), 0, Math.min(take, max_headers), false);
+                    new BlockIdentifier(null, fromBlock), 0, Math.min(take, max), false);
             ResBlocksHeaders rbhs = new ResBlocksHeaders(headers);
             this.p2pMgr.send(_nodeIdHashcode, rbhs);
         } else
             this.log.error("<req-headers decode-msg msg-bytes={} from-node={}>",
                     _msgBytes == null ? 0 : _msgBytes.length, _nodeIdHashcode);
     }
+
+    /*
+    @Override
+    public void receive(int _nodeIdHashcode, String _displayId, final byte[] _msgBytes) {
+        ReqBlocksHeaders reqHeaders = ReqBlocksHeaders.decode(_msgBytes);
+        if (reqHeaders != null) {
+
+            // limit number of headers
+            long from = reqHeaders.getFromBlock();
+            int take = Math.min(reqHeaders.getTake(), max);
+
+            // results
+            List<A0BlockHeader> headers = new ArrayList<>();
+
+            for (long i = from, m = from + take; i <= m; i++) {
+                A0BlockHeader b = cache.get(i);
+                if (b != null)
+                    headers.add(b);
+                else {
+                    AionBlock ab = blockchain.getBlockByNumber(i);
+
+                    // terminate it if not found
+                    if(ab == null)
+                        break;
+                    else {
+                        A0BlockHeader h = ab.getHeader();
+                        headers.add(h);
+                        cache.put(h.getNumber(), h);
+                    }
+                }
+            }
+
+            if (headers.size() > 0)
+                this.p2pMgr.send(_nodeIdHashcode, new ResBlocksHeaders(headers));
+
+            this.log.debug("<req-headers from-block={} take={} from-node={}>",
+                from,
+                take,
+                _displayId
+            );
+
+        } else
+            this.log.error(
+                "<req-headers decode-msg msg-bytes={} from-node={}>",
+                _msgBytes == null ? 0 : _msgBytes.length,
+                _nodeIdHashcode
+            );
+    }
+    */
 }

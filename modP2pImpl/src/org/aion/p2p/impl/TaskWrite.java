@@ -27,11 +27,12 @@ package org.aion.p2p.impl;
 
 import org.aion.p2p.Header;
 import org.aion.p2p.Msg;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author chris
@@ -63,9 +64,8 @@ public class TaskWrite implements Runnable {
 
     @Override
     public void run() {
-        Thread.currentThread().setName("p2p-write");
+        boolean closed = false;
 
-        // NOTE: the following logic may cause message loss
         if (this.channelBuffer.onWrite.compareAndSet(false, true)) {
             /*
              * @warning header set len (body len) before header encode
@@ -76,7 +76,8 @@ public class TaskWrite implements Runnable {
             h.setLen(bodyLen);
             byte[] headerBytes = h.encode();
 
-            //System.out.println("write " + h.getCtrl() + "-" + h.getAction());
+            // print route
+            // System.out.println("write " + h.getVer() + "-" + h.getCtrl() + "-" + h.getAction());
             ByteBuffer buf = ByteBuffer.allocate(headerBytes.length + bodyLen);
             buf.put(headerBytes);
             if (bodyBytes != null)
@@ -87,32 +88,30 @@ public class TaskWrite implements Runnable {
                 while (buf.hasRemaining()) {
                     sc.write(buf);
                 }
-            } catch (IOException e) {
+            } catch (ClosedChannelException ex1) {
+                if (showLog) {
+                    System.out.println("<p2p closed-channel-exception node=" + this.nodeShortId + ">");
+                }
+                closed = true;
+            } catch (IOException ex2) {
                 if (showLog) {
                     System.out.println("<p2p write-msg-io-exception node=" + this.nodeShortId + ">");
                 }
             } finally {
                 this.channelBuffer.onWrite.set(false);
-                try {
-
-                    Msg msg = this.channelBuffer.messages.poll(1, TimeUnit.MILLISECONDS);
-
+                if (!closed) {
+                    Msg msg = this.channelBuffer.messages.poll();
                     if (msg != null) {
                         //System.out.println("write " + h.getCtrl() + "-" + h.getAction());
                         workers.submit(new TaskWrite(workers, showLog, nodeShortId, sc, msg, channelBuffer));
                     }
-                } catch (InterruptedException e) {
-                    if(showLog)
-                        e.printStackTrace();
+                } else {
+                    this.channelBuffer.messages.clear();
                 }
             }
         } else {
-            try {
-                this.channelBuffer.messages.put(msg);
-            } catch (InterruptedException e) {
-                if(showLog)
-                    e.printStackTrace();
-            }
+            // message may get dropped here when the message queue is full.
+            this.channelBuffer.messages.offer(msg);
         }
     }
 }

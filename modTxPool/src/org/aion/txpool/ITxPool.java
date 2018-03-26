@@ -31,6 +31,11 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Aion pending state should be the only user of transaction pool.
+ *
+ * @param <TX>
+ */
 public interface ITxPool<TX extends ITransaction> {
 
     String PROP_TXN_TIMEOUT = "txn-timeout";
@@ -39,7 +44,8 @@ public interface ITxPool<TX extends ITransaction> {
 
     List<TX> add(List<TX> tx);
 
-    boolean add(TX tx);
+    // return TX if the TX add success, if the pool already has the same nonce tx. return the old tx.
+    TX add(TX tx);
 
     List<TX> remove(List<TX> tx);
 
@@ -53,10 +59,14 @@ public interface ITxPool<TX extends ITransaction> {
 
     Map.Entry<BigInteger, BigInteger> bestNonceSet(Address addr);
 
+    BigInteger bestNonce(Address addr);
+
     void updateBlkNrgLimit(long nrg);
 
     @SuppressWarnings("SameReturnValue")
     String getVersion();
 
     List<TX> snapshotAll();
+
+    TX getPoolTx(Address from, BigInteger txNonce);
 }

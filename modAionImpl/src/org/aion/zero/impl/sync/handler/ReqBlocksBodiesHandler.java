@@ -35,8 +35,9 @@
 
 package org.aion.zero.impl.sync.handler;
 
-import java.util.List;
+import java.util.*;
 
+import org.aion.base.util.ByteArrayWrapper;
 import org.aion.p2p.Ctrl;
 import org.aion.p2p.Handler;
 import org.aion.p2p.IP2pMgr;
@@ -45,6 +46,8 @@ import org.aion.zero.impl.core.IAionBlockchain;
 import org.aion.zero.impl.sync.Act;
 import org.aion.zero.impl.sync.msg.ReqBlocksBodies;
 import org.aion.zero.impl.sync.msg.ResBlocksBodies;
+import org.aion.zero.impl.types.AionBlock;
+import org.apache.commons.collections4.map.LRUMap;
 import org.slf4j.Logger;
 
 /**
@@ -55,22 +58,51 @@ public final class ReqBlocksBodiesHandler extends Handler {
 
     private final Logger log;
 
+    private final int max;
+
     private final IAionBlockchain blockchain;
 
     private final IP2pMgr p2pMgr;
 
-    public ReqBlocksBodiesHandler(final Logger _log, final IAionBlockchain _blockchain, final IP2pMgr _p2pMgr) {
+    private final Map<ByteArrayWrapper, byte[]> cache = Collections.synchronizedMap(new LRUMap<>(1024));
+
+    public ReqBlocksBodiesHandler(final Logger _log, final IAionBlockchain _blockchain, final IP2pMgr _p2pMgr, int _max) {
         super(Ver.V0, Ctrl.SYNC, Act.REQ_BLOCKS_BODIES);
         this.log = _log;
         this.blockchain = _blockchain;
         this.p2pMgr = _p2pMgr;
+        this.max = _max;
     }
 
     @Override
     public void receive(int _nodeIdHashcode, String _displayId, final byte[] _msgBytes) {
         ReqBlocksBodies reqBlocks = ReqBlocksBodies.decode(_msgBytes);
         if (reqBlocks != null) {
-            List<byte[]> blockBodies = this.blockchain.getListOfBodiesByHashes(reqBlocks.getBlocksHashes());
+
+            // limit number of blocks
+            List<byte[]> hashes = reqBlocks.getBlocksHashes();
+            hashes = hashes.size() > max ? hashes.subList(0, max) : hashes;
+
+            // results
+            List<byte[]> blockBodies = new ArrayList<>();
+
+            // read from cache, then block store
+            for (byte[] hash : hashes) {
+                byte[] blockBytes = cache.get(ByteArrayWrapper.wrap(hash));
+                if (blockBytes != null) {
+                    blockBodies.add(blockBytes);
+                } else {
+                    AionBlock block = blockchain.getBlockByHash(hash);
+                    if (block != null) {
+                        blockBodies.add(block.getEncodedBody());
+                        cache.put(ByteArrayWrapper.wrap(hash), block.getEncodedBody());
+                    } else {
+                        // not found
+                        break;
+                    }
+                }
+            }
+
             this.p2pMgr.send(_nodeIdHashcode, new ResBlocksBodies(blockBodies));
             this.log.debug("<req-bodies req-take={} res-take={} from-node={}>", reqBlocks.getBlocksHashes().size(),
                     blockBodies.size(), _displayId);
