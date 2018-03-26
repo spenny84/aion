@@ -1032,7 +1032,6 @@ public class RLP {
 
             header = new byte[1 + byteNum];
             header[0] = (byte) (OFFSET_LONG_LIST + byteNum);
-            System.out.println("HeaderLen_old: " + header.length);
 
             for(int i = 0; i < byteNum; i++) {
                 header[header.length - 1 - i] = (byte) ((totalLength >> (8 * i)) & 0xFF);
@@ -1050,11 +1049,9 @@ public class RLP {
             int tmpLength = length;
             byte byteNum = 0;
             while (tmpLength != 0) {
-                System.out.println("tmpLen: " + tmpLength);
                 ++byteNum;
                 tmpLength = tmpLength >> 8;
             }
-            System.out.println("byteNum new: " + byteNum);
             return byteNum + 1;
         }
     }
@@ -1107,8 +1104,6 @@ public class RLP {
                 tmpLength = tmpLength >> 8;
             }
 
-            System.out.println("encodeLongElementHeader byteNum OLD: " + byteNum);
-
             byte[] header = new byte[1 + byteNum];
             header[0] = (byte) (OFFSET_LONG_ITEM + byteNum);
             for (int i = 0; i < byteNum; i++) {
@@ -1137,15 +1132,8 @@ public class RLP {
 
         System.arraycopy(listHeader, 0, output, 0, listHeader.length);
 
-        //encodeListHeaderInArray(dataLength, output, 0);
-
         int cummStart = listHeader.length;
-//        for (ByteArrayWrapper element : data) {
-//
-//            byte[] encodedData = RLP.encodeElement(element.getData());
-//            System.arraycopy(encodedData, 0, output, cummStart, encodedData.length);
-//            cummStart += encodedData.length;
-//        }
+
         for(byte[] element : encodedDataStore) {
             System.arraycopy(element, 0, output, cummStart, element.length);
             cummStart += element.length;
@@ -1182,18 +1170,6 @@ public class RLP {
                 tmpLength = tmpLength >> 8;
             }
             tmpLength = totalLength;
-
-
-//            byte[] lenBytes = new byte[byteNum];
-//            for (int i = 0; i < byteNum; ++i) {
-//                lenBytes[byteNum - 1 - i] = (byte) ((tmpLength >> (8 * i)) & 0xFF);
-//            }
-//            // first byte = F7 + bytes.length
-//            data = new byte[1 + lenBytes.length + totalLength];
-//            data[0] = (byte) (OFFSET_LONG_LIST + byteNum);
-//            System.arraycopy(lenBytes, 0, data, 1, lenBytes.length);
-//
-//            copyPos = lenBytes.length + 1;
 
             /*
              * Data = [0xCX, + length + rlp1, rlp2, rlp3, ....]

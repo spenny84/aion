@@ -660,23 +660,6 @@ public class TrieImpl implements Trie {
                                                               + valsTotalSize + valsHeaderSize +
                                                               root.length);
 
-
-//            byte[] keysHeader = RLP.encodeLongElementHeader(keysTotalSize);
-//            byte[] valsHeader = RLP.encodeListHeader(valsTotalSize);
-//            byte[] listHeader = RLP.encodeListHeader(
-//                    keysTotalSize + keysHeader.length + valsTotalSize + valsHeader.length + root.length);
-
-//            byte[] rlpData = new byte[keysTotalSize + keysHeader.length + valsTotalSize + valsHeader.length
-//                    + listHeader.length + root.length];
-
-            System.out.println("KeysTotalSize_new " + keysTotalSize);
-            System.out.println("keysHeaderSize_new " + keysHeaderSize);
-            System.out.println("valsTotalSize_new " + valsTotalSize);
-            System.out.println("valsHeaderSize_new " + valsHeaderSize);
-            System.out.println("listHeaderSize_new " + listHeaderSize);
-            System.out.println("root_new " + root.length);
-
-
             byte[] rlpData = new byte[keysTotalSize + keysHeaderSize + valsTotalSize + valsHeaderSize
                     + listHeaderSize + root.length];
 
@@ -703,15 +686,8 @@ public class TrieImpl implements Trie {
 
                 System.arraycopy(key.getData(),0, rlpData, pos, key.getData().length);
                 pos += key.getData().length;
-//                byte[] valBytes = RLP.encodeElement(node.getValue().getData());
-//
-//                System.arraycopy(valBytes, 0, rlpData,
-//                        listHeaderSize+keysHeaderSize+keysTotalSize+valsHeaderSize+k_2,
-//                        valBytes.length);
-                System.out.println(k_2);
-                k_2 = RLP.encodeElement(node.getValue().getData(), rlpData, k_2);
 
-                //k_2 += valBytes.length;
+                k_2 = RLP.encodeElement(node.getValue().getData(), rlpData, k_2);
             }
 
             return rlpData;
@@ -755,22 +731,10 @@ public class TrieImpl implements Trie {
             byte[] valsHeader = RLP.encodeListHeader(valsTotalSize);
             byte[] listHeader = RLP.encodeListHeader(
                     keysTotalSize + keysHeader.length + valsTotalSize + valsHeader.length + root.length);
-//            return valsHeader;
-//
+
             byte[] rlpData = new byte[keysTotalSize + keysHeader.length + valsTotalSize + valsHeader.length
                     + listHeader.length + root.length];
-//
-//            System.out.println("KeysTotalSize_old " + keysTotalSize);
-//            System.out.println("keysHeaderSize_old " + keysHeader.length);
-//            System.out.println("valsTotalSize_old " + valsTotalSize);
-//            System.out.println("valsHeaderSize_old " + valsHeader.length);
-//            System.out.println("listHeaderSize_old " + listHeader.length);
-//            System.out.println("root_new " + root.length);
-//
-//
-//            // copy headers:
-//            // [ rlp_list_header, rlp_keys_header, rlp_keys, rlp_vals_header,
-//            // rlp_val]
+
             System.arraycopy(listHeader, 0, rlpData, 0, listHeader.length);
             System.arraycopy(keysHeader, 0, rlpData, listHeader.length, keysHeader.length);
             System.arraycopy(valsHeader, 0, rlpData, (listHeader.length + keysHeader.length + keysTotalSize),
@@ -799,8 +763,6 @@ public class TrieImpl implements Trie {
                         valBytes.length);
                 k_2 += valBytes.length;
             }
-
-
 
             return rlpData;
         }

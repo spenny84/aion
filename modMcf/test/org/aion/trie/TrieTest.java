@@ -494,13 +494,23 @@ public class TrieTest {
         trie.update(Hex.decode(val_2), Hex.decode(val_2));
         trie.update(Hex.decode(val_3), Hex.decode(val_3));
 
-
         byte[] ser_old = trie.serialize_old();
-        System.out.println("--------------------");
         byte[] ser_new = trie.serialize();
 
-        System.out.println("Old: " + toHexString(ser_old));
-        System.out.println("New: " + toHexString(ser_new));
+        assertArrayEquals(ser_old, ser_new);
+    }
+
+    @Test
+    public void testMassiveTrieSerialization() {
+        TrieImpl trie = new TrieImpl(null);
+        for(String s : randomValues) {
+            trie.update(s.getBytes(), s.getBytes());
+        }
+
+        byte[] ser_old = trie.serialize_old();
+        byte[] ser_new = trie.serialize();
+
+        assertArrayEquals(ser_old, ser_new);
     }
 
 }

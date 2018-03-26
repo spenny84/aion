@@ -44,8 +44,6 @@ public class OptimizedEquiValidator {
     private int solutionWidth;
     private HashSet<Integer> indexSet;
     protected static final Logger LOG = AionLoggerFactory.getLogger(LogEnum.CONS.name());
-    HashSet<Integer> indexSet = new HashSet<>(512);
-
 
     private Blake2b.Param initState;
 
