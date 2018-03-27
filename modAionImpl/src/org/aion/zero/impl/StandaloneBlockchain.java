@@ -57,86 +57,8 @@ public class StandaloneBlockchain extends AionBlockchainImpl {
 
     public AionGenesis genesis;
 
-    private static IRepositoryConfig repoConfig = new IRepositoryConfig() {
-        @Override
-        public String[] getVendorList() {
-            return new String[] { DBVendor.MOCKDB.toValue() };
-        }
-
-        @Override
-        public String getActiveVendor() {
-            return DBVendor.MOCKDB.toValue();
-        }
-
-        @Override
-        public String getDbPath() {
-            return "";
-        }
-
-        @Override
-        public int getPrune() {
-            return -1;
-        }
-
-        @Override
-        public IContractDetails contractDetailsImpl() {
-            return ContractDetailsAion.createForTesting(0, 1000000).getDetails();
-        }
-
-        @Override
-        public boolean isAutoCommitEnabled() {
-            return false;
-        }
-
-        @Override
-        public boolean isDbCacheEnabled() {
-            return false;
-        }
-
-        @Override
-        public boolean isDbCompressionEnabled() {
-            return false;
-        }
-
-        @Override
-        public boolean isHeapCacheEnabled() {
-            return true;
-        }
-
-        @Override
-        public String getMaxHeapCacheSize() {
-            return "0";
-        }
-
-        @Override
-        public boolean isHeapCacheStatsEnabled() {
-            return false;
-        }
-
-        @Override
-        public int getMaxFdAllocSize() {
-            return LevelDBConstants.MAX_OPEN_FILES;
-        }
-
-        // default levelDB setting, may want to change this later
-        @Override
-        public int getBlockSize() {
-            return LevelDBConstants.BLOCK_SIZE;
-        }
-
-        @Override
-        public int getWriteBufferSize() {
-            return LevelDBConstants.WRITE_BUFFER_SIZE;
-        }
-
-        @Override
-        public int getCacheSize() {
-            return LevelDBConstants.CACHE_SIZE;
-        }
-    };
-
     protected StandaloneBlockchain(final A0BCConfig config, final ChainConfiguration chainConfig) {
-        super(config, AionRepositoryImpl.createForTesting(repoConfig), chainConfig);
+        super(config, AionRepositoryImpl.createForTesting(new DefaultTestRepositoryConfig()), chainConfig);
     }
 
     protected StandaloneBlockchain(final A0BCConfig config, final ChainConfiguration chainConfig,
@@ -179,6 +101,7 @@ public class StandaloneBlockchain extends AionBlockchainImpl {
         private List<ECKey> defaultKeys = new ArrayList<>();
         private Map<ByteArrayWrapper, AccountState> initialState = new HashMap<>();
         private boolean blockPruningEnabled = false;
+        private IRepositoryConfig repoConfig = new DefaultTestRepositoryConfig();
 
         public static final int INITIAL_ACC_LEN = 10;
         public static final BigInteger DEFAULT_BALANCE = new BigInteger("1000000000000000000000000");
@@ -239,88 +162,13 @@ public class StandaloneBlockchain extends AionBlockchainImpl {
             return this;
         }
 
+        public Builder withRepositoryConfig(IRepositoryConfig config) {
+            repoConfig = config;
+            return this;
+        }
+
         private IRepositoryConfig generateRepositoryConfig() {
-            if (!blockPruningEnabled) {
-                return repoConfig;
-            }
-
-            return new IRepositoryConfig() {
-                @Override
-                public String[] getVendorList() {
-                    return new String[] { DBVendor.MOCKDB.toValue() };
-                }
-
-                @Override
-                public String getActiveVendor() {
-                    return DBVendor.MOCKDB.toValue();
-                }
-
-                @Override
-                public String getDbPath() {
-                    return "";
-                }
-
-                @Override
-                public int getPrune() {
-                    return 0;
-                }
-
-                @Override
-                public IContractDetails contractDetailsImpl() {
-                    return ContractDetailsAion.createForTesting(0, 1000000).getDetails();
-                }
-
-                @Override
-                public boolean isAutoCommitEnabled() {
-                    return false;
-                }
-
-                @Override
-                public boolean isDbCacheEnabled() {
-                    return false;
-                }
-
-                @Override
-                public boolean isDbCompressionEnabled() {
-                    return false;
-                }
-
-                @Override
-                public boolean isHeapCacheEnabled() {
-                    return true;
-                }
-
-                @Override
-                public String getMaxHeapCacheSize() {
-                    return "0";
-                }
-
-                @Override
-                public boolean isHeapCacheStatsEnabled() {
-                    return false;
-                }
-
-                @Override
-                public int getMaxFdAllocSize() {
-                    return LevelDBConstants.MAX_OPEN_FILES;
-                }
-
-                // default levelDB setting, may want to change this later
-                @Override
-                public int getBlockSize() {
-                    return LevelDBConstants.BLOCK_SIZE;
-                }
-
-                @Override
-                public int getWriteBufferSize() {
-                    return LevelDBConstants.WRITE_BUFFER_SIZE;
-                }
-
-                @Override
-                public int getCacheSize() {
-                    return LevelDBConstants.CACHE_SIZE;
-                }
-            };
+            return repoConfig;
         }
 
         public Bundle build() {
@@ -414,6 +262,84 @@ public class StandaloneBlockchain extends AionBlockchainImpl {
             bc.setTotalDifficulty(genesis.getCumulativeDifficulty());
 
             return new Bundle(this.defaultKeys, bc);
+        }
+    }
+
+    public static class DefaultTestRepositoryConfig implements IRepositoryConfig {
+        @Override
+        public String[] getVendorList() {
+            return new String[] { DBVendor.MOCKDB.toValue() };
+        }
+
+        @Override
+        public String getActiveVendor() {
+            return DBVendor.MOCKDB.toValue();
+        }
+
+        @Override
+        public String getDbPath() {
+            return null;
+        }
+
+        @Override
+        public int getPrune() {
+            return -1;
+        }
+
+        @Override
+        public IContractDetails contractDetailsImpl() {
+            return ContractDetailsAion.createForTesting(0, 1000000).getDetails();
+        }
+
+        @Override
+        public boolean isAutoCommitEnabled() {
+            return false;
+        }
+
+        @Override
+        public boolean isDbCacheEnabled() {
+            return true;
+        }
+
+        @Override
+        public boolean isDbCompressionEnabled() {
+            return true;
+        }
+
+        @Override
+        public boolean isHeapCacheEnabled() {
+            return false;
+        }
+
+        @Override
+        public String getMaxHeapCacheSize() {
+            return "0";
+        }
+
+        @Override
+        public boolean isHeapCacheStatsEnabled() {
+            return false;
+        }
+
+        @Override
+        public int getMaxFdAllocSize() {
+            return LevelDBConstants.MAX_OPEN_FILES;
+        }
+
+        // default levelDB setting, may want to change this later
+        @Override
+        public int getBlockSize() {
+            return LevelDBConstants.BLOCK_SIZE;
+        }
+
+        @Override
+        public int getWriteBufferSize() {
+            return LevelDBConstants.WRITE_BUFFER_SIZE;
+        }
+
+        @Override
+        public int getCacheSize() {
+            return LevelDBConstants.CACHE_SIZE;
         }
     }
 }
