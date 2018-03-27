@@ -886,7 +886,7 @@ public class RLP {
         }
     }
 
-    public static byte[] encodeListHeader(int size) {
+    public static byte[] encodeListHeader_old(int size) {
 
         if (size == 0) {
             return new byte[] { (byte) OFFSET_SHORT_LIST };
@@ -924,7 +924,42 @@ public class RLP {
         return header;
     }
 
-    public static byte[] encodeLongElementHeader(int length) {
+    public static byte[] encodeListHeader(int size) {
+
+        if (size == 0) {
+            return new byte[] { (byte) OFFSET_SHORT_LIST };
+        }
+
+        int totalLength = size;
+
+        byte[] header;
+        if (totalLength < SIZE_THRESHOLD) {
+
+            header = new byte[1];
+            header[0] = (byte) (OFFSET_SHORT_LIST + totalLength);
+        } else {
+            // length of length = BX
+            // prefix = [BX, [length]]
+            int tmpLength = totalLength;
+            byte byteNum = 0;
+            while (tmpLength != 0) {
+                ++byteNum;
+                tmpLength = tmpLength >> 8;
+            }
+
+            header = new byte[1 + byteNum];
+            header[0] = (byte) (OFFSET_LONG_LIST + byteNum);
+
+            for(int i = 0; i < byteNum; i++) {
+                header[header.length - 1 - i] = (byte) ((totalLength >> (8 * i)) & 0xFF);
+            }
+
+        }
+
+        return header;
+    }
+
+    public static byte[] encodeLongElementHeader_old(int length) {
 
         if (length < SIZE_THRESHOLD) {
 
@@ -959,7 +994,36 @@ public class RLP {
         }
     }
 
-    public static byte[] encodeSet(Set<ByteArrayWrapper> data) {
+    public static byte[] encodeLongElementHeader(int length) {
+
+        if (length < SIZE_THRESHOLD) {
+
+            if (length == 0) {
+                return new byte[]{(byte) 0x80};
+            } else {
+                return new byte[]{(byte) (0x80 + length)};
+            }
+
+        } else {
+
+            int tmpLength = length;
+            byte byteNum = 0;
+            while (tmpLength != 0) {
+                ++byteNum;
+                tmpLength = tmpLength >> 8;
+            }
+
+            byte[] header = new byte[1 + byteNum];
+            header[0] = (byte) (OFFSET_LONG_ITEM + byteNum);
+            for (int i = 0; i < byteNum; i++) {
+                header[header.length - 1 - i] = (byte) ((length >> (8 * i)) & 0xFF);
+            }
+
+            return header;
+        }
+    }
+
+    public static byte[] encodeSet_old(Set<ByteArrayWrapper> data) {
 
         int dataLength = 0;
         for (ByteArrayWrapper element : data) {
@@ -986,7 +1050,35 @@ public class RLP {
         return output;
     }
 
-    public static byte[] encodeList(byte[]... elements) {
+    public static byte[] encodeSet(Set<ByteArrayWrapper> data) {
+
+        List<byte[]> encodedDataStore = new ArrayList<>(data.size());
+
+        int dataLength = 0;
+        for (ByteArrayWrapper element : data) {
+
+            byte[] encodedElement = RLP.encodeElement(element.getData());
+            encodedDataStore.add(encodedElement);
+            dataLength += encodedElement.length;
+        }
+        //TODO: Can this be improved? Instead of creating a new array, calculate the length firstm the place into the larger array
+        byte[] listHeader = encodeListHeader(dataLength);
+
+        byte[] output = new byte[listHeader.length + dataLength];
+
+        System.arraycopy(listHeader, 0, output, 0, listHeader.length);
+
+        int cummStart = listHeader.length;
+
+        for(byte[] element : encodedDataStore) {
+            System.arraycopy(element, 0, output, cummStart, element.length);
+            cummStart += element.length;
+        }
+
+        return output;
+    }
+
+    public static byte[] encodeList_old(byte[]... elements) {
 
         if (elements == null) {
             return new byte[] { (byte) OFFSET_SHORT_LIST };
@@ -1027,6 +1119,59 @@ public class RLP {
         }
         for (byte[] element : elements) {
             System.arraycopy(element, 0, data, copyPos, element.length);
+            copyPos += element.length;
+        }
+        return data;
+    }
+
+
+    public static byte[] encodeList(byte[]... elements) {
+
+        if (elements == null) {
+            return new byte[] { (byte) OFFSET_SHORT_LIST };
+        }
+
+        int totalLength = 0;
+        for (byte[] element1 : elements) {
+            totalLength += element1.length;
+        }
+
+        byte[] data;
+        int copyPos;
+        if (totalLength < SIZE_THRESHOLD) {
+
+            data = new byte[1 + totalLength];
+            data[0] = (byte) (OFFSET_SHORT_LIST + totalLength);
+            copyPos = 1;
+        } else {
+            // length of length = BX
+            // prefix = [BX, [length]]
+            int tmpLength = totalLength;
+            byte byteNum = 0;
+            while (tmpLength != 0) {
+                ++byteNum;
+                tmpLength = tmpLength >> 8;
+            }
+            tmpLength = totalLength;
+
+            /*
+             * Data = [0xCX, + length + rlp1, rlp2, rlp3, ....]
+             * X = 0 + (Number of bytes used to represent length of lists)
+             * rlp1 .. rlpx rlp encodings of each list
+             *
+             * Write directly to the data array to avoid allocating a new byte array, copying it later and throwing it away.
+             *
+             */
+            data = new byte[1 + byteNum + totalLength];
+            data[0] = (byte) (OFFSET_LONG_LIST + byteNum);
+            for(int i = 0; i < byteNum; i++) {
+                //                lenBytes[byteNum - 1 - i] = (byte) ((tmpLength >> (8 * i)) & 0xFF);
+                data[byteNum - i] = (byte) ((tmpLength >> (8 * i)) & 0xFF);
+            }
+            copyPos = byteNum + 1;
+        }
+        for (byte[] element : elements) {
+            System.arraycopy(element, 0, data, copyPos , element.length);
             copyPos += element.length;
         }
         return data;
