@@ -665,7 +665,8 @@ public final class P2pMgr implements IP2pMgr {
 	}
 
 	/**
-	 *            SocketChannel
+	 * SocketChannel
+	 * 
 	 * @throws IOException
 	 *             IOException
 	 */
@@ -693,7 +694,8 @@ public final class P2pMgr implements IP2pMgr {
 	}
 
 	/**
-	 *            SocketChannel
+	 * SocketChannel
+	 * 
 	 * @throws IOException
 	 *             IOException
 	 */
@@ -1045,9 +1047,11 @@ public final class P2pMgr implements IP2pMgr {
 			thrdIn.setPriority(Thread.NORM_PRIORITY);
 			thrdIn.start();
 
-			Thread thrdOut = new Thread(new TaskSend(), "p2p-out");
-			thrdOut.setPriority(Thread.NORM_PRIORITY);
-			thrdOut.start();
+			for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
+				Thread thrdOut = new Thread(new TaskSend(), "p2p-out-" + i);
+				thrdOut.setPriority(Thread.NORM_PRIORITY);
+				thrdOut.start();
+			}
 
 			if (upnpEnable)
 				scheduledWorkers.scheduleWithFixedDelay(new TaskUPnPManager(selfPort), 1, PERIOD_UPNP_PORT_MAPPING,
