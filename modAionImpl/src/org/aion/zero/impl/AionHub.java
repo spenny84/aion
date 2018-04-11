@@ -36,6 +36,7 @@ import org.aion.log.AionLoggerFactory;
 import org.aion.log.LogEnum;
 import org.aion.log.LogUtil;
 import org.aion.mcf.blockchain.IPendingStateInternal;
+import org.aion.mcf.config.Cfg;
 import org.aion.mcf.config.CfgNetP2p;
 import org.aion.mcf.db.IBlockStorePow;
 import org.aion.mcf.tx.ITransactionExecThread;
@@ -414,4 +415,7 @@ public class AionHub {
         return this.startingBlock;
     }
 
+    public Cfg getConfig() {
+        return this.cfg;
+    }
 }

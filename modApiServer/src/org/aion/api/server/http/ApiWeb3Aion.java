@@ -48,9 +48,12 @@ import org.aion.evtmgr.IEventMgr;
 import org.aion.evtmgr.IHandler;
 import org.aion.evtmgr.impl.callback.EventCallback;
 import org.aion.evtmgr.impl.evt.EventTx;
+import org.aion.mcf.config.Cfg;
+import org.aion.mcf.config.CfgApi;
 import org.aion.mcf.core.AccountState;
 import org.aion.mcf.core.ImportResult;
 import org.aion.mcf.vm.types.DataWord;
+import org.aion.p2p.INode;
 import org.aion.zero.impl.blockchain.AionImpl;
 import org.aion.zero.impl.blockchain.IAionChain;
 import org.aion.zero.impl.config.CfgAion;
@@ -848,6 +851,37 @@ public class ApiWeb3Aion extends ApiAion {
             JSONObject b = (JSONObject) Blk.AionBlockToJson(block.getKey(), block.getValue().getKey(), _fullTx);
             b.put("mainchain", block.getValue().getValue());
             response.put(b);
+        }
+        return new RpcMsg(response);
+    }
+
+    /* -------------------------------------------------------------------------
+     * net api
+     *
+     * Rationale for decoupling from admin api was that some features are
+     * needed from a remote connection (like querying how much peers).
+     *
+     * In general these apis should only be available for querying
+     */
+    public RpcMsg net_self(JSONArray _params) {
+        q
+    }
+
+    public RpcMsg net_peers(JSONArray _params) {
+        Map<Integer, INode> peers = this.ac.getAionHub().getP2pMgr().getActiveNodes();
+        JSONArray response = new JSONArray();
+
+        for (INode peer : peers.values()) {
+            JSONObject peerObj = new JSONObject();
+            peerObj.put("id", peer.getIdHash());
+            peerObj.put("idStr", peer.getIdShort());
+            peerObj.put("bestBlock", peer.getBestBlockNumber());
+            peerObj.put("totalDifficulty", peer.getTotalDifficulty());
+
+            JSONObject networkObj = new JSONObject();
+            networkObj.put("remoteAddress", peer.getIpStr() + ":" + peer.getPort());
+
+            peerObj.put("network", networkObj);
         }
         return new RpcMsg(response);
     }
