@@ -42,13 +42,11 @@ import org.aion.evtmgr.IHandler;
 import org.aion.evtmgr.impl.es.EventExecuteService;
 import org.aion.evtmgr.impl.evt.EventBlock;
 import org.aion.evtmgr.impl.evt.EventTx;
-import org.aion.mcf.core.ImportResult;
 import org.aion.zero.impl.AionGenesis;
 import org.aion.zero.impl.Version;
 import org.aion.zero.impl.blockchain.AionPendingStateImpl;
 import org.aion.zero.impl.blockchain.IAionChain;
 import org.aion.zero.impl.config.CfgAion;
-import org.aion.zero.impl.db.AionBlockStore;
 import org.aion.zero.impl.types.AionBlock;
 import org.aion.zero.impl.types.AionBlockSummary;
 import org.aion.zero.impl.types.AionTxInfo;
@@ -58,15 +56,11 @@ import org.aion.zero.types.AionTxReceipt;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static org.aion.base.util.Hex.toHexString;
 import static org.aion.evtmgr.impl.evt.EventTx.STATE.GETSTATE;
 
 public abstract class ApiAion extends Api {
@@ -81,21 +75,19 @@ public abstract class ApiAion extends Api {
     protected IAionChain ac; // assumption: blockchainImpl et al. provide concurrency guarantee
 
     // using java.util.concurrent library objects
-    protected AtomicLong fltrIndex = null; // AtomicLong
-    protected Map<Long, Fltr> installedFilters = null; // ConcurrentHashMap
+    protected AtomicLong fltrIndex; // AtomicLong
+    protected Map<Long, Fltr> installedFilters; // ConcurrentHashMap
     protected Map<ByteArrayWrapper, AionTxReceipt> pendingReceipts; // Collections.synchronizedMap
 
     // 'safe-publishing' idiom
-    protected volatile double reportedHashrate = 0; // volatile, used only for 'publishing'
+    private volatile double reportedHashrate = 0; // volatile, used only for 'publishing'
 
     // thread safe because value never changing, can be safely read by multiple threads
     protected final String[] compilers = new String[] {"solidity"};
-    protected final long DEFAULT_NRG_LIMIT = 500_000L;
     protected final short FLTRS_MAX = 1024;
     protected final String clientVersion = computeClientVersion();
 
     private ReentrantLock blockTemplateLock;
-    private AionBlock currentBestBlock;
     private volatile AionBlock currentTemplate;
     private byte[] currentBestBlockHash;
 
@@ -105,13 +97,12 @@ public abstract class ApiAion extends Api {
         this.ac = _ac;
         this.installedFilters = new ConcurrentHashMap<>();
         this.fltrIndex = new AtomicLong(0);
+        this.blockTemplateLock = new ReentrantLock();
 
         // register events
         IEventMgr evtMgr = this.ac.getAionHub().getEventMgr();
         evtMgr.registerEvent(Collections.singletonList(new EventTx(EventTx.CALLBACK.PENDINGTXUPDATE0)));
         evtMgr.registerEvent(Collections.singletonList(new EventBlock(EventBlock.CALLBACK.ONBLOCK0)));
-
-        blockTemplateLock = new ReentrantLock();
     }
 
     public final class EpApi implements Runnable {
@@ -151,7 +142,7 @@ public abstract class ApiAion extends Api {
         return 2;
     }
 
-    public Map<Long, Fltr> getInstalledFltrs() {
+    protected Map<Long, Fltr> getInstalledFltrs() {
         return installedFilters;
     }
 
@@ -165,7 +156,7 @@ public abstract class ApiAion extends Api {
         return this.ac.getBlockchain().getBestBlock();
     }
 
-    public AionBlock getBlockTemplate() {
+    protected AionBlock getBlockTemplate() {
 
         blockTemplateLock.lock();
         try {
@@ -175,8 +166,7 @@ public abstract class ApiAion extends Api {
             if(currentBestBlockHash == null || !Arrays.equals(bestBlockStaticHash, currentBestBlockHash)) {
 
                 // Record new best block on the chain
-                currentBestBlock = bestBlock;
-                currentBestBlockHash = currentBestBlock.getHeader().getStaticHash();
+                currentBestBlockHash = bestBlock.getHeader().getStaticHash();
 
                 // Generate new block template
                 AionPendingStateImpl.TransactionSortedSet ret = new AionPendingStateImpl.TransactionSortedSet();
@@ -211,17 +201,20 @@ public abstract class ApiAion extends Api {
         }
     }
 
-    public SyncInfo getSync() {
+    protected SyncInfo getSync() {
         SyncInfo sync = new SyncInfo();
         sync.done = this.ac.isSyncComplete();
         sync.chainStartingBlkNumber = this.ac.getInitialStartingBlockNumber().orElse(0L);
-        sync.blksImportMax = CfgAion.inst().getSync().getBlocksImportMax();
+        sync.blocksBackwardMin = CfgAion.inst().getSync().getBlocksBackwardMin();
+        sync.blocksBackwardMax = CfgAion.inst().getSync().getBlocksBackwardMax();
+        sync.blocksRequestMax = CfgAion.inst().getSync().getBlocksRequestMax();
+        sync.blocksResponseMax = CfgAion.inst().getSync().getBlocksResponseMax();
         sync.networkBestBlkNumber = this.ac.getNetworkBestBlockNumber().orElse(0L);
         sync.chainBestBlkNumber = this.ac.getLocalBestBlockNumber().orElse(0L);
         return sync;
     }
 
-    public AionTransaction getTransactionByBlockHashAndIndex(byte[] hash, long index) {
+    protected AionTransaction getTransactionByBlockHashAndIndex(byte[] hash, long index) {
         AionBlock pBlk = this.getBlockByHash(hash);
         if (pBlk == null) {
             if (LOG.isErrorEnabled()) {
@@ -253,7 +246,7 @@ public abstract class ApiAion extends Api {
         return tx;
     }
 
-    public AionTransaction getTransactionByBlockNumberAndIndex(long blkNr, long index) {
+    protected AionTransaction getTransactionByBlockNumberAndIndex(long blkNr, long index) {
         AionBlock pBlk = this.getBlock(blkNr);
         if (pBlk == null) {
             if (LOG.isErrorEnabled()) {
@@ -285,7 +278,7 @@ public abstract class ApiAion extends Api {
         return tx;
     }
 
-    public long getBlockTransactionCountByNumber(long blkNr) {
+    protected long getBlockTransactionCountByNumber(long blkNr) {
         AionBlock pBlk = this.getBlock(blkNr);
         if (pBlk == null) {
             LOG.error("ApiAion.getTransactionByBlockNumberAndIndex - can't find the block by the block number");
@@ -295,7 +288,7 @@ public abstract class ApiAion extends Api {
         return pBlk.getTransactionsList().size();
     }
 
-    public long getTransactionCountByHash(byte[] hash) {
+    protected long getTransactionCountByHash(byte[] hash) {
         AionBlock pBlk = this.getBlockByHash(hash);
         if (pBlk == null) {
             LOG.error("ApiAion.getTransactionByBlockNumberAndIndex - can't find the block by the block number");
@@ -304,7 +297,7 @@ public abstract class ApiAion extends Api {
         return pBlk.getTransactionsList().size();
     }
 
-    public long getTransactionCount(Address addr, long blkNr) {
+    protected long getTransactionCount(Address addr, long blkNr) {
         AionBlock pBlk = this.getBlock(blkNr);
         if (pBlk == null) {
             LOG.error("ApiAion.getTransactionByBlockNumberAndIndex - can't find the block by the block number");
@@ -320,7 +313,7 @@ public abstract class ApiAion extends Api {
         return cnt;
     }
 
-    public AionTransaction getTransactionByHash(byte[] hash) {
+    protected AionTransaction getTransactionByHash(byte[] hash) {
         TxRecpt txRecpt = this.getTransactionReceipt(hash);
 
         if (txRecpt == null) {
@@ -353,7 +346,7 @@ public abstract class ApiAion extends Api {
      * For use cases where you need all the transaction receipts in a block, please use a different
      * strategy,
      */
-    public TxRecpt getTransactionReceipt(byte[] txHash) {
+    protected TxRecpt getTransactionReceipt(byte[] txHash) {
         if (txHash == null) {
             if (LOG.isErrorEnabled()) {
                 LOG.error("<get-transaction-receipt msg=tx-hash-null>");
@@ -411,21 +404,21 @@ public abstract class ApiAion extends Api {
         return new TxRecpt(block, txInfo, cumulateNrg, true);
     }
 
-    public byte[] doCall(ArgTxCall _params) {
+    protected byte[] doCall(ArgTxCall _params) {
         AionTransaction tx = new AionTransaction(_params.getNonce().toByteArray(), _params.getTo(),
                 _params.getValue().toByteArray(), _params.getData(), _params.getNrg(), _params.getNrgPrice());
         AionTxReceipt rec = this.ac.callConstant(tx, this.ac.getAionHub().getBlockchain().getBestBlock());
         return rec.getExecutionResult();
     }
 
-    public long estimateGas(ArgTxCall params) {
+    protected long estimateGas(ArgTxCall params) {
         AionTransaction tx = new AionTransaction(params.getNonce().toByteArray(), params.getTo(),
                 params.getValue().toByteArray(), params.getData(), params.getNrg(), params.getNrgPrice());
         AionTxReceipt receipt = this.ac.callConstant(tx, this.ac.getAionHub().getBlockchain().getBestBlock());
         return receipt.getEnergyUsed();
     }
 
-    public ContractCreateResult createContract(ArgTxCall _params) {
+    protected ContractCreateResult createContract(ArgTxCall _params) {
 
         Address from = _params.getFrom();
 
@@ -442,7 +435,7 @@ public abstract class ApiAion extends Api {
             try {
                 synchronized (pendingState) {
                     byte[] nonce = !(_params.getNonce().equals(BigInteger.ZERO)) ? _params.getNonce().toByteArray()
-                            : pendingState.bestNonce(Address.wrap(key.getAddress())).toByteArray();
+                            : pendingState.bestPendingStateNonce(Address.wrap(key.getAddress())).toByteArray();
 
                     AionTransaction tx = new AionTransaction(nonce, from, null, _params.getValue().toByteArray(),
                             _params.getData(), _params.getNrg(), _params.getNrgPrice());
@@ -465,7 +458,7 @@ public abstract class ApiAion extends Api {
     }
 
     // Transaction Level
-    public BigInteger getBalance(String _address) throws Exception {
+    public BigInteger getBalance(String _address) {
         return this.ac.getRepository().getBalance(Address.wrap(_address));
     }
 
@@ -475,7 +468,7 @@ public abstract class ApiAion extends Api {
 
     // TODO: refactor these ad-hoc transaction creations - violates DRY and is messy
 
-    public long estimateNrg(ArgTxCall _params) {
+    protected long estimateNrg(ArgTxCall _params) {
         if (_params == null) {
             throw new NullPointerException();
         }
@@ -507,7 +500,7 @@ public abstract class ApiAion extends Api {
         }
     }
 
-    public byte[] sendTransaction(ArgTxCall _params) {
+    protected byte[] sendTransaction(ArgTxCall _params) {
 
         Address from = _params.getFrom();
 
@@ -526,7 +519,7 @@ public abstract class ApiAion extends Api {
             synchronized (pendingState) {
                 // TODO : temp set nrg & price to 1
                 byte[] nonce = (!_params.getNonce().equals(BigInteger.ZERO)) ? _params.getNonce().toByteArray()
-                        : pendingState.bestNonce(Address.wrap(key.getAddress())).toByteArray();
+                        : pendingState.bestPendingStateNonce(Address.wrap(key.getAddress())).toByteArray();
 
                 AionTransaction tx = new AionTransaction(nonce, _params.getTo(), _params.getValue().toByteArray(),
                         _params.getData(), _params.getNrg(), _params.getNrgPrice());
@@ -541,7 +534,7 @@ public abstract class ApiAion extends Api {
         }
     }
 
-    public byte[] sendTransaction(byte[] signedTx) {
+    protected byte[] sendTransaction(byte[] signedTx) {
         if (signedTx == null) {
             throw new NullPointerException();
         }
@@ -563,12 +556,12 @@ public abstract class ApiAion extends Api {
     // }
     // --Commented out by Inspection STOP (02/02/18 6:58 PM)
 
-    public String[] getBootNodes() {
+    protected String[] getBootNodes() {
         return CfgAion.inst().getNodes();
     }
 
 //    private synchronized BigInteger getTxNonce(ECKey key) {
-//        return pendingState.bestNonce();
+//        return pendingState.bestPendingStateNonce();
 //    }
 
 //    private synchronized BigInteger getTxNonce(ECKey key, boolean add) {
@@ -579,7 +572,7 @@ public abstract class ApiAion extends Api {
         return this.ac.getBlockMiner().isMining();
     }
 
-    public int peerCount() {
+    protected int peerCount() {
         return this.ac.getAionHub().getP2pMgr().getActiveNodes().size();
     }
 
@@ -588,12 +581,11 @@ public abstract class ApiAion extends Api {
     // https://github.com/ethereum/wiki/wiki/Client-Version-Strings
     private String computeClientVersion() {
         try {
-            return Arrays.asList(
+            return Stream.of(
                     "Aion(J)",
                     "v" + Version.KERNEL_VERSION,
                     System.getProperty("os.name"),
                     "Java-" + System.getProperty("java.version"))
-                    .stream()
                     .collect(Collectors.joining("/"));
         }
         catch(Exception e) {
@@ -605,7 +597,7 @@ public abstract class ApiAion extends Api {
 
     // create a comma-separated string of supported p2p wire protocol versions
     // mainly to keep compatibility with eth_protocolVersion which returns a String
-    public String p2pProtocolVersion() {
+    protected String p2pProtocolVersion() {
         try {
             List<Short> p2pVersions = this.ac.getAionHub().getP2pMgr().versions();
             int i = 0;
@@ -623,7 +615,7 @@ public abstract class ApiAion extends Api {
         }
     }
 
-    public String chainId() {
+    protected String chainId() {
         return (this.ac.getAionHub().getP2pMgr().chainId() + "");
     }
 
@@ -643,7 +635,7 @@ public abstract class ApiAion extends Api {
     // hashrate in sol/s should just be a hexadecimal representation of a BigNumber
     // right now, assuming only one external miner is connected to the kernel
     // this needs to change in the future when this client needs to support multiple external miners
-    public boolean setReportedHashrate(String hashrate, String clientId) {
+    protected boolean setReportedHashrate(String hashrate, String clientId) {
         try {
             reportedHashrate = Double.parseDouble(hashrate);
             return true;
@@ -654,7 +646,7 @@ public abstract class ApiAion extends Api {
         return false;
     }
 
-    public long getRecommendedNrgPrice() {
+    protected long getRecommendedNrgPrice() {
         if (this.nrgOracle != null)
             return this.nrgOracle.getNrgPrice();
         else
@@ -662,12 +654,12 @@ public abstract class ApiAion extends Api {
     }
 
     // leak the oracle instance. NrgOracle is threadsafe, so safe to do this, but bad design
-    public NrgOracle getNrgOracle() {
+    protected NrgOracle getNrgOracle() {
         return this.nrgOracle;
     }
 
-    public long getDefaultNrgLimit() {
-        return DEFAULT_NRG_LIMIT;
+    protected long getDefaultNrgLimit() {
+        return 500_000L;
     }
 
     protected void startES(String thName) {

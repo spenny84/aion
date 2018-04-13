@@ -30,7 +30,8 @@ public class RpcMethods {
                 Map.entry("debug", debug),
                 Map.entry("personal", personal),
                 Map.entry("eth", eth),
-                Map.entry("stratum", stratum)
+                Map.entry("stratum", stratum),
+                Map.entry("ops", ops)
         );
 
         enabledEndpoints = composite(enabledGroups);
@@ -58,6 +59,7 @@ public class RpcMethods {
                 LOG.debug("rpc-methods - unable to recognize api group name: " + group);
                 continue;
             }
+            // ok to have overlapping method key strings (as long as they also map to the same function)
             if (g != null)
                 composite.putAll(g);
         }
@@ -67,8 +69,22 @@ public class RpcMethods {
 
     // jdk8 lambdas infer interface method, making our constant declaration pretty.
     public interface RpcMethod {
-        RpcMsg call(JSONArray params);
+        RpcMsg call(Object params);
     }
+
+    /**
+     * ops
+     */
+    private final Map<String, RpcMethod> ops = Map.ofEntries(
+            Map.entry("ops_getAccountState", (params) -> api.ops_getAccountState(params)),
+            Map.entry("ops_getChainHeadViewBestBlock", (params) -> api.ops_getChainHeadViewBestBlock()),
+            Map.entry("ops_getChainHeadView", (params) -> api.ops_getChainHeadView()),
+            Map.entry("eth_getBalance", (params) -> api.eth_getBalance(params)),
+            Map.entry("eth_sendRawTransaction", (params) -> api.eth_sendRawTransaction(params)),
+            Map.entry("eth_getBlockByNumber", (params) -> api.eth_getBlockByNumber(params)),
+            Map.entry("eth_getBlockByHash", (params) -> api.eth_getBlockByHash(params)),
+            Map.entry("eth_getTransactionByHash", (params) -> api.eth_getTransactionByHash(params))
+    );
 
     /**
      * ping
@@ -116,7 +132,7 @@ public class RpcMethods {
             Map.entry("eth_getCompilers", (params) -> api.eth_getCompilers()),
             Map.entry("eth_compileSolidity", (params) -> api.eth_compileSolidity(params)),
 
-            Map.entry("eth_accounts", (params) -> api.eth_accounts()),
+            //Map.entry("eth_accounts", (params) -> api.eth_accounts()), // belongs to the personal api
             Map.entry("eth_blockNumber", (params) -> api.eth_blockNumber()),
             Map.entry("eth_coinbase", (params) -> api.eth_coinbase()),
             Map.entry("eth_call", (params) -> api.eth_call(params)),
@@ -162,7 +178,7 @@ public class RpcMethods {
             Map.entry("getinfo", (params) -> api.stratum_getinfo()),
             Map.entry("getmininginfo", (params) -> api.stratum_getmininginfo()),
             Map.entry("submitblock", (params) -> api.stratum_submitblock(params)),
-            Map.entry("getblocktemplate", (params) -> api.stratum_getblocktemplate()),
+            Map.entry("getblocktemplate", (params) -> api.stratum_getwork()),
             Map.entry("getHeaderByBlockNumber", (params) -> api.stratum_getHeaderByBlockNumber(params))
     );
 }

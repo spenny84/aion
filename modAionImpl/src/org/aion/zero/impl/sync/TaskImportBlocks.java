@@ -30,20 +30,15 @@
 package org.aion.zero.impl.sync;
 
 import org.aion.base.util.ByteArrayWrapper;
-import org.aion.base.util.Hex;
 import org.aion.mcf.core.ImportResult;
 import org.aion.p2p.IP2pMgr;
 import org.aion.zero.impl.AionBlockchainImpl;
-import org.aion.zero.impl.sync.msg.ReqBlocksHeaders;
 import org.aion.zero.impl.types.AionBlock;
 import org.slf4j.Logger;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -110,13 +105,21 @@ final class TaskImportBlocks implements Runnable {
                     importResult = this.chain.tryToConnect(b);
                 } catch (Throwable e) {
                     log.error("<import-block throw> {}", e.toString());
+                    if (e.getMessage().contains("No space left on device")){
+                        log.error("Shutdown due to lack of disk space.");
+                        System.exit(0);
+                    }
                     continue;
                 }
 
                 long t2 = System.currentTimeMillis();
-                log.info("<import-status: node = {}, number = {}, txs = {}, result = {}, time elapsed = {} ms>",
-                        bw.getDisplayId(), b.getNumber(),
-                        b.getTransactionsList().size(), importResult, t2 - t1);
+                log.info("<import-status: node = {}, hash = {}, number = {}, txs = {}, result = {}, time elapsed = {} ms>",
+                         bw.getDisplayId(),
+                         b.getShortHash(),
+                         b.getNumber(),
+                         b.getTransactionsList().size(),
+                         importResult,
+                         t2 - t1);
 
                 try {
                     switch (importResult) {
