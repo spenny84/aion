@@ -98,6 +98,14 @@ public class Aion {
                 );
 
         IAionChain ac = AionFactory.create();
+
+        if (!cfg.getConsensus().isSeed()) {
+            ac.getAionHub().getPendingState().updateBest();
+        }
+
+        if (cfg.getTx().getPoolBackup()) {
+            ac.getAionHub().getPendingState().loadPendingTx();
+        }
                 
         IMineRunner nm = ac.getBlockMiner();
 
