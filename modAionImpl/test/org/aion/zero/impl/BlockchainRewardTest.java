@@ -51,6 +51,25 @@ public class BlockchainRewardTest {
 
     private IBlockConstants constants = new BlockConstants();
 
+    // the first block should immediately be greater than
+    @Test
+    public void testBlockchainRewardFirstBlock() {
+        StandaloneBlockchain.Bundle bundle = new StandaloneBlockchain.Builder()
+                .withDefaultAccounts()
+                .withValidatorConfiguration("simple")
+                .build();
+
+        StandaloneBlockchain bc = bundle.bc;
+        assertThat(bc.getRepository().getBalance(bc.getMinerCoinbase())).isEqualTo(BigInteger.ZERO);
+
+        AionBlock block1 = bc.createNewBlock(bc.getGenesis(), Collections.emptyList(), true);
+        ImportResult result = bc.tryToConnect(block1);
+
+        assertThat(result).isEqualTo(ImportResult.IMPORTED_BEST);
+
+        System.out.println(bc.getRepository().getBalance(bc.getMinerCoinbase()));
+    }
+
     /**
      * Test that blocks between the lower and upper bounds follow
      * a certain function [0, 259200]
