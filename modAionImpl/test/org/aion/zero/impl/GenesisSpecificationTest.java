@@ -133,4 +133,120 @@ public class GenesisSpecificationTest {
         
         assertThat(genesis.getPremine().keySet()).isEqualTo(accountStateSet);
     }
+
+    /**
+     * Two genesis (genesi?) with equivalent fields should still have
+     * non-equivalent hashes given they modify the state in unique ways
+     */
+    @Test
+    public void testOverrideState() throws HeaderStructureException {
+        // empty genesis (no accounts overridden)
+        AionGenesis emptyGenesis = (new AionGenesis.Builder()).build();
+        AionGenesis.Builder builder = new AionGenesis.Builder();
+        builder.addPreminedAccount(new Address("a09b2af1f67c61cb761c3260a06b31828d2dfd0c445e5e1e7ec8b853cbfb58ee"),
+                new AccountState(BigInteger.ZERO, BigInteger.ONE));
+
+        AionGenesis preminedGenesis = builder.build();
+
+        System.out.println(ByteUtil.toHexString(emptyGenesis.getHash()));
+        System.out.println(ByteUtil.toHexString(preminedGenesis.getHash()));
+
+        assertThat(emptyGenesis.getStateRoot()).isNotEqualTo(preminedGenesis.getStateRoot());
+        assertThat(emptyGenesis.getChainId()).isEqualTo(preminedGenesis.getChainId());
+        assertThat(emptyGenesis.getNumber()).isEqualTo(preminedGenesis.getNumber());
+        assertThat(emptyGenesis.getTimestamp()).isEqualTo(preminedGenesis.getTimestamp());
+        assertThat(emptyGenesis.getParentHash()).isEqualTo(preminedGenesis.getParentHash());
+        assertThat(emptyGenesis.getDifficulty()).isEqualTo(preminedGenesis.getDifficulty());
+    }
+
+    @Test
+    public void testOverrideNetworkBalance() throws HeaderStructureException {
+        // empty genesis (no accounts overridden)
+        AionGenesis emptyGenesis = (new AionGenesis.Builder()).build();
+        AionGenesis.Builder builder = new AionGenesis.Builder();
+        builder.addNetworkBalance(1, BigInteger.valueOf(42));
+
+        AionGenesis preminedGenesis = builder.build();
+
+        System.out.println(ByteUtil.toHexString(emptyGenesis.getHash()));
+        System.out.println(ByteUtil.toHexString(preminedGenesis.getHash()));
+
+        assertThat(emptyGenesis.getHash()).isNotEqualTo(preminedGenesis.getHash());
+
+        assertThat(emptyGenesis.getStateRoot()).isNotEqualTo(preminedGenesis.getStateRoot());
+        assertThat(emptyGenesis.getChainId()).isEqualTo(preminedGenesis.getChainId());
+        assertThat(emptyGenesis.getNumber()).isEqualTo(preminedGenesis.getNumber());
+        assertThat(emptyGenesis.getTimestamp()).isEqualTo(preminedGenesis.getTimestamp());
+        assertThat(emptyGenesis.getParentHash()).isEqualTo(preminedGenesis.getParentHash());
+        assertThat(emptyGenesis.getDifficulty()).isEqualTo(preminedGenesis.getDifficulty());
+    }
+
+    @Test
+    public void testOverrideChainId() throws HeaderStructureException {
+        // empty genesis (no accounts overridden)
+        AionGenesis emptyGenesis = (new AionGenesis.Builder()).build();
+        AionGenesis.Builder builder = new AionGenesis.Builder();
+        builder.withChainId(42);
+
+        AionGenesis modifiedGenesis = builder.build();
+
+        System.out.println(ByteUtil.toHexString(emptyGenesis.getHash()));
+        System.out.println(ByteUtil.toHexString(modifiedGenesis.getHash()));
+    }
+
+    @Test
+    public void testOverrideNumber() throws HeaderStructureException {
+        AionGenesis emptyGenesis = (new AionGenesis.Builder()).build();
+        AionGenesis.Builder builder = new AionGenesis.Builder();
+
+        builder.withDifficulty(BigInteger.valueOf(42).toByteArray());
+        AionGenesis modifiedGenesis = builder.build();
+
+        System.out.println(ByteUtil.toHexString(emptyGenesis.getHash()));
+        System.out.println(ByteUtil.toHexString(modifiedGenesis.getHash()));
+
+        assertThat(emptyGenesis.getHash()).isNotEqualTo(modifiedGenesis.getHash());
+    }
+
+    @Test
+    public void testOverrideCoinbase() throws HeaderStructureException {
+        AionGenesis emptyGenesis = (new AionGenesis.Builder()).build();
+        AionGenesis.Builder builder = new AionGenesis.Builder();
+
+        builder.withCoinbase(new Address("0xa09b2af1f67c61cb761c3260a06b31828d2dfd0c445e5e1e7ec8b853cbfb58ee"));
+        AionGenesis modifiedGenesis = builder.build();
+
+        System.out.println(ByteUtil.toHexString(emptyGenesis.getHash()));
+        System.out.println(ByteUtil.toHexString(modifiedGenesis.getHash()));
+
+        assertThat(emptyGenesis.getHash()).isNotEqualTo(modifiedGenesis.getHash());
+    }
+
+    @Test
+    public void testOverrideEnergyLimit() throws HeaderStructureException {
+        AionGenesis emptyGenesis = (new AionGenesis.Builder()).build();
+        AionGenesis.Builder builder = new AionGenesis.Builder();
+
+        builder.withEnergyLimit(42);
+        AionGenesis modifiedGenesis = builder.build();
+
+        System.out.println(ByteUtil.toHexString(emptyGenesis.getHash()));
+        System.out.println(ByteUtil.toHexString(modifiedGenesis.getHash()));
+
+        assertThat(emptyGenesis.getHash()).isNotEqualTo(modifiedGenesis.getHash());
+    }
+
+    @Test
+    public void testOverrideParentHash() throws HeaderStructureException {
+        AionGenesis emptyGenesis = (new AionGenesis.Builder()).build();
+        AionGenesis.Builder builder = new AionGenesis.Builder();
+
+        builder.withParentHash(HashUtil.h256("one chain to rule them all".getBytes()));
+        AionGenesis modifiedGenesis = builder.build();
+
+        System.out.println(ByteUtil.toHexString(emptyGenesis.getHash()));
+        System.out.println(ByteUtil.toHexString(modifiedGenesis.getHash()));
+
+        assertThat(emptyGenesis.getHash()).isNotEqualTo(modifiedGenesis.getHash());
+    }
 }
