@@ -130,8 +130,11 @@ public class GenesisSpecificationTest {
         assertThat(genesis.getReceiptsRoot()).isEqualTo(HashUtil.EMPTY_TRIE_HASH);
         assertThat(genesis.getCumulativeDifficulty()).isEqualTo(overrideValue);
         assertThat(genesis.getTransactionsList().isEmpty()).isEqualTo(true);
-        
         assertThat(genesis.getPremine().keySet()).isEqualTo(accountStateSet);
+
+        // as an added bonus, print the genesis each time
+
+        System.out.println(genesis.toString());
     }
 
     /**
@@ -148,8 +151,8 @@ public class GenesisSpecificationTest {
 
         AionGenesis preminedGenesis = builder.build();
 
-        System.out.println(ByteUtil.toHexString(emptyGenesis.getHash()));
-        System.out.println(ByteUtil.toHexString(preminedGenesis.getHash()));
+        System.out.println("empty: " + emptyGenesis.toString());
+        System.out.println("premined: " + preminedGenesis.toString());
 
         assertThat(emptyGenesis.getStateRoot()).isNotEqualTo(preminedGenesis.getStateRoot());
         assertThat(emptyGenesis.getChainId()).isEqualTo(preminedGenesis.getChainId());
@@ -168,8 +171,8 @@ public class GenesisSpecificationTest {
 
         AionGenesis preminedGenesis = builder.build();
 
-        System.out.println(ByteUtil.toHexString(emptyGenesis.getHash()));
-        System.out.println(ByteUtil.toHexString(preminedGenesis.getHash()));
+        System.out.println("empty: " + emptyGenesis.toString());
+        System.out.println("premined: " + preminedGenesis.toString());
 
         assertThat(emptyGenesis.getHash()).isNotEqualTo(preminedGenesis.getHash());
 
@@ -190,8 +193,10 @@ public class GenesisSpecificationTest {
 
         AionGenesis modifiedGenesis = builder.build();
 
-        System.out.println(ByteUtil.toHexString(emptyGenesis.getHash()));
-        System.out.println(ByteUtil.toHexString(modifiedGenesis.getHash()));
+        System.out.println("empty: " + emptyGenesis.toString());
+        System.out.println("modified: " + modifiedGenesis.toString());
+
+        assertThat(emptyGenesis.getHash()).isNotEqualTo(modifiedGenesis.getHash());
     }
 
     @Test
@@ -202,8 +207,8 @@ public class GenesisSpecificationTest {
         builder.withDifficulty(BigInteger.valueOf(42).toByteArray());
         AionGenesis modifiedGenesis = builder.build();
 
-        System.out.println(ByteUtil.toHexString(emptyGenesis.getHash()));
-        System.out.println(ByteUtil.toHexString(modifiedGenesis.getHash()));
+        System.out.println("empty: " + emptyGenesis.toString());
+        System.out.println("modified: " + modifiedGenesis.toString());
 
         assertThat(emptyGenesis.getHash()).isNotEqualTo(modifiedGenesis.getHash());
     }
@@ -216,8 +221,8 @@ public class GenesisSpecificationTest {
         builder.withCoinbase(new Address("0xa09b2af1f67c61cb761c3260a06b31828d2dfd0c445e5e1e7ec8b853cbfb58ee"));
         AionGenesis modifiedGenesis = builder.build();
 
-        System.out.println(ByteUtil.toHexString(emptyGenesis.getHash()));
-        System.out.println(ByteUtil.toHexString(modifiedGenesis.getHash()));
+        System.out.println("empty: " + emptyGenesis.toString());
+        System.out.println("modified: " + modifiedGenesis.toString());
 
         assertThat(emptyGenesis.getHash()).isNotEqualTo(modifiedGenesis.getHash());
     }
@@ -230,8 +235,8 @@ public class GenesisSpecificationTest {
         builder.withEnergyLimit(42);
         AionGenesis modifiedGenesis = builder.build();
 
-        System.out.println(ByteUtil.toHexString(emptyGenesis.getHash()));
-        System.out.println(ByteUtil.toHexString(modifiedGenesis.getHash()));
+        System.out.println("empty: " + emptyGenesis.toString());
+        System.out.println("modified: " + modifiedGenesis.toString());
 
         assertThat(emptyGenesis.getHash()).isNotEqualTo(modifiedGenesis.getHash());
     }
@@ -244,8 +249,8 @@ public class GenesisSpecificationTest {
         builder.withParentHash(HashUtil.h256("one chain to rule them all".getBytes()));
         AionGenesis modifiedGenesis = builder.build();
 
-        System.out.println(ByteUtil.toHexString(emptyGenesis.getHash()));
-        System.out.println(ByteUtil.toHexString(modifiedGenesis.getHash()));
+        System.out.println("empty: " + emptyGenesis.toString());
+        System.out.println("modified: " + modifiedGenesis.toString());
 
         assertThat(emptyGenesis.getHash()).isNotEqualTo(modifiedGenesis.getHash());
     }

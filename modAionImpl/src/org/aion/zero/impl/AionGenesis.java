@@ -415,13 +415,31 @@ public class AionGenesis extends AionBlock {
         // header (encoded with 2 tabs)
         builder.append(this.getHeader().toString());
 
+        // chainId
+        builder.append("  chainId=");
+        builder.append(this.getChainId());
+        builder.append("\n");
+
         // accounts
         builder.append("  Premined Accounts: \n");
         for (AccountState premined : this.premine.values()) {
             builder.append(premined.toString());
+            builder.append("\n");
         }
 
-        // chainId
+        // network balance
+        builder.append("  NetworkBalance: \n");
+        if (!this.networkBalances.isEmpty()) {
+            builder.append("  [\n");
+            for (Map.Entry<Integer, BigInteger> networkBalance : this.networkBalances.entrySet()) {
+                builder.append("    chainId=");
+                builder.append(networkBalance.getKey());
+                builder.append("    balance=");
+                builder.append(networkBalance.getValue());
+                builder.append("\n");
+            }
+            builder.append("  ]\n");
+        }
 
         // footer
         builder.append("]");

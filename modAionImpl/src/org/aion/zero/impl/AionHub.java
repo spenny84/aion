@@ -329,6 +329,10 @@ public class AionHub {
             blockchain.setBestBlock(genesis);
             blockchain.setTotalDifficulty(genesis.getCumulativeDifficulty());
 
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("Loaded genesis: \n{}", genesis.toString());
+            }
+
             if (this.eventMgr != null) {
                 List<IEvent> evts = new ArrayList<>();
                 evts.add(new EventBlock(EventBlock.CALLBACK.ONBLOCK0));

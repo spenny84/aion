@@ -292,7 +292,7 @@ public class A0BlockHeader extends AbstractBlockHeader implements IPowBlockHeade
         StringBuilder toStringBuff = new StringBuilder();
         toStringBuff.append("  hash=").append(toHexString(getHash())).append("  Length: ").append(getHash().length)
                 .append(suffix);
-        toStringBuff.append("  version=").append(Integer.toHexString(version)).append("  Length: ").append(suffix);
+        toStringBuff.append("  version=").append(Integer.toHexString(version));
         toStringBuff.append("  number=").append(number).append(suffix);
         toStringBuff.append("  parentHash=").append(toHexString(parentHash)).append("  parentHash: ")
                 .append(parentHash.length).append(suffix);
