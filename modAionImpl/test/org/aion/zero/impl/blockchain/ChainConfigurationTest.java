@@ -38,7 +38,9 @@ import org.aion.base.util.ByteUtil;
 import org.aion.equihash.EquiUtils;
 import org.aion.equihash.Equihash;
 import org.aion.mcf.valid.BlockHeaderValidator;
+import org.aion.zero.api.BlockConstants;
 import org.aion.zero.exceptions.HeaderStructureException;
+import org.aion.zero.impl.core.RewardsCalculator;
 import org.aion.zero.types.A0BlockHeader;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -49,6 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.aion.base.util.ByteUtil.toLEByteArray;
@@ -155,5 +158,72 @@ public class ChainConfigurationTest {
         when(header.getNumber()).thenReturn(1l);
         BigInteger blockReward1 = config.getRewardsCalculator().calculateReward(header);
         assertThat(blockReward1).isEqualTo(increment);
+    }
+
+    @Mock
+    A0BlockHeader mockHeader;
+
+
+    /**
+     * Less of a test, more for visual communication with business team about
+     * the exact amount of block rewards
+     */
+    @Test
+    public void testPrintRampUp() {
+        long lastBlock = 259200;
+        ChainConfiguration config = new ChainConfiguration();
+        BigInteger increment = config.getConstants()
+                .getBlockReward()
+                .subtract(config.getConstants().getRampUpStartValue())
+                .divide(BigInteger.valueOf(((BlockConstants) config.getConstants()).getRampUpUpperBound()));
+
+        RewardsCalculator calculator = new RewardsCalculator((BlockConstants) config.getConstants());
+
+        var rewards = new ArrayList<BigInteger>();
+        // for the 0th day
+        rewards.add(BigInteger.ZERO);
+        // inclusive
+        // genesis gives no rewards
+        for (int i = 1; i <= lastBlock; i++) {
+            when(mockHeader.getNumber()).thenReturn((long) i);
+            BigInteger reward = calculator.calculateReward(mockHeader);
+            rewards.add(reward);
+//            System.out.println(i + "," + reward);
+        }
+
+        BigInteger accum = BigInteger.ZERO;
+        for (int i = 0; i <= 8640; i++) {
+            accum = accum.add(rewards.get(i));
+        }
+
+
+        BigInteger secondAccum = BigInteger.ZERO;
+        for (int i = 8641; i <= (8640*2); i++) {
+            secondAccum = secondAccum.add(rewards.get(i));
+        }
+
+        System.out.println("day 2-1 delta: " + secondAccum.subtract(accum));
+
+        // note here that the 0th block does not give rewards
+        System.out.println("first [0, 8640] blocks: " + accum);
+        System.out.println("[8641, 8640 * 2] blocks: " + secondAccum);
+
+
+        BigInteger secondLastAccum = BigInteger.ZERO;
+        for (int i = rewards.size() - (8640 * 2); i < rewards.size() - 8640; i++) {
+            secondLastAccum = secondLastAccum.add(rewards.get(i));
+        }
+
+        BigInteger lastAccum = BigInteger.ZERO;
+        for (int i = rewards.size() - 8640; i < rewards.size(); i++) {
+            lastAccum = lastAccum.add(rewards.get(i));
+        }
+        System.out.println("last [250560, 259200] blocks: " + lastAccum);
+        System.out.println("second last: " + secondLastAccum);
+        System.out.println("day 30-29 delta: " + lastAccum.subtract(secondLastAccum));
+
+        System.out.println("post final block reward: " + config.getConstants().getBlockReward());
+
+        System.out.println("total rewards given during rampup: " + rewards.stream().reduce(BigInteger.ZERO, BigInteger::add));
     }
 }
