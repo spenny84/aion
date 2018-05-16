@@ -24,6 +24,7 @@
 package org.aion.zero.impl;
 
 import org.aion.base.type.Address;
+import org.aion.zero.impl.config.CfgConsensusPow;
 import org.aion.zero.impl.core.energy.AbstractEnergyStrategyLimit;
 import org.aion.zero.impl.core.energy.EnergyStrategies;
 
@@ -63,4 +64,14 @@ public interface A0BCConfig {
      * Retrieves the selected energy strategy algorithm
      */
     AbstractEnergyStrategyLimit getEnergyLimitStrategy();
+
+    /**
+     * Determines whether the blockchain should be running in testMode
+     *
+     * @return true if kernel is in testMode, false otherwise
+     * @see CfgConsensusPow#isTestMode()
+     */
+    default boolean isTestMode() {
+        return false;
+    }
 }

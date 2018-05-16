@@ -65,6 +65,20 @@ public final class CfgConsensusPow extends CfgConsensus {
 
     protected String extraData;
 
+    /**
+     * testMode is a temporary solution for easier block testing, placing a kernel
+     * into {@code testMode} will modify the default behaviour of the node such that
+     * PoW and Equihash validation is no longer required.
+     *
+     * Additionally, the behaviour of RPC calls is modified, such that all transactions
+     * that are sent to the client are immediately executed, before the transactionHash
+     * is returned the client.
+     *
+     * This simulates a pseudo-synchronous behaviour that lets us efficiently test
+     * smart contracts against the state.
+     */
+    private boolean testMode;
+
     public void fromXML(final XMLStreamReader sr) throws XMLStreamException {
         loop: while (sr.hasNext()) {
             int eventType = sr.next();
@@ -183,5 +197,13 @@ public final class CfgConsensusPow extends CfgConsensus {
 
     public boolean isSeed() {
         return seed;
+    }
+
+    public void setTestMode(boolean testMode) {
+        this.testMode = testMode;
+    }
+
+    public boolean isTestMode() {
+        return this.testMode;
     }
 }

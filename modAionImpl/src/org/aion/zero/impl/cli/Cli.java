@@ -37,6 +37,7 @@ import org.aion.crypto.ECKeyFac;
 import org.aion.mcf.account.Keystore;
 import org.aion.mcf.config.Cfg;
 import org.aion.zero.impl.Version;
+import org.aion.zero.impl.config.CfgAion;
 import org.aion.zero.impl.db.RecoveryUtils;
 
 import java.io.Console;
@@ -155,6 +156,10 @@ public class Cli {
                     // Don't put break here!!
                 case "--version":
                     System.out.println(Version.KERNEL_VERSION);
+                    break;
+                case "--testmode":
+                    // consider this a hidden feature, necessary for testing
+                    ((CfgAion) cfg).getConsensus().setTestMode(true);
                     break;
                 default:
                     System.out.println("Unable to parse the input arguments");

@@ -48,6 +48,7 @@ import org.aion.zero.impl.Version;
 import org.aion.zero.impl.blockchain.AionPendingStateImpl;
 import org.aion.zero.impl.blockchain.IAionChain;
 import org.aion.zero.impl.config.CfgAion;
+import org.aion.zero.impl.config.CfgConsensusPow;
 import org.aion.zero.impl.db.AionBlockStore;
 import org.aion.zero.impl.types.AionBlock;
 import org.aion.zero.impl.types.AionBlockSummary;
@@ -93,6 +94,9 @@ public abstract class ApiAion extends Api {
     private volatile AionBlock currentTemplate;
     private byte[] currentBestBlockHash;
 
+    /** @see CfgConsensusPow#isTestMode()  */
+    private boolean isTestMode;
+
     protected EventExecuteService ees;
 
     public ApiAion(final IAionChain _ac) {
@@ -100,6 +104,7 @@ public abstract class ApiAion extends Api {
         this.installedFilters = new ConcurrentHashMap<>();
         this.fltrIndex = new AtomicLong(0);
         this.blockTemplateLock = new ReentrantLock();
+        this.isTestMode = CfgAion.inst().getConsensus().isTestMode();
 
         // register events
         IEventMgr evtMgr = this.ac.getAionHub().getEventMgr();
@@ -535,6 +540,11 @@ public abstract class ApiAion extends Api {
                         _params.getData(), _params.getNrg(), _params.getNrgPrice());
                 tx.sign(key);
 
+                if (this.isTestMode) {
+                    AionBlockchainImpl.inst().createAndConnectBlock(tx);
+                    return tx.getHash();
+                }
+
                 pendingState.addPendingTransaction(tx);
 
                 return tx.getHash();
@@ -552,8 +562,12 @@ public abstract class ApiAion extends Api {
         try {
             AionTransaction tx = new AionTransaction(signedTx);
 
-            pendingState.addPendingTransaction(tx);
+            if (this.isTestMode) {
+                AionBlockchainImpl.inst().createAndConnectBlock(tx);
+                return tx.getHash();
+            }
 
+            pendingState.addPendingTransaction(tx);
             return tx.getHash();
         } catch (Exception ex) {
             return ByteUtil.EMPTY_BYTE_ARRAY;

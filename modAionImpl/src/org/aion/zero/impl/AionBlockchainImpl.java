@@ -213,6 +213,14 @@ public class AionBlockchainImpl implements IAionBlockchain {
                         cfgAion.getConsensus().getEnergyStrategy(),
                         config);
             }
+
+            private Boolean testMode = null;
+            @Override
+            public boolean isTestMode() {
+                if (testMode == null)
+                    testMode = cfgAion.getConsensus().isTestMode();
+                return testMode;
+            }
         };
     }
 
@@ -679,6 +687,18 @@ public class AionBlockchainImpl implements IAionBlockchain {
         return block;
     }
 
+    /**
+     * One-shot command to create a new block, then immediately import it into the blockchain
+     * @param transaction transactions to be added into block
+     * @return {@code ImportResult} of the block
+     */
+    public synchronized ImportResult createAndConnectBlock(AionTransaction transaction) {
+        AionBlock block = createNewBlock(this.bestBlock,
+                Collections.singletonList(transaction),
+                false);
+        return tryToConnect(block);
+    }
+
     @Override
     public synchronized AionBlockSummary add(AionBlock block) {
         // typical use without rebuild
@@ -838,7 +858,7 @@ public class AionBlockchainImpl implements IAionBlockchain {
         * Header should already be validated at this point, no need to check again
         * 1. Block came in from network; validated by P2P before processing further
         * 2. Block was submitted locally - adding invalid data to your own chain
-         */
+        */
 //        if (!this.blockHeaderValidator.validate(header, LOG)) {
 //            return false;
 //        }
@@ -876,7 +896,10 @@ public class AionBlockchainImpl implements IAionBlockchain {
         boolean isValid = true;
 
         if (!block.isGenesis()) {
-            isValid = isValid(block.getHeader());
+
+            // only apply header checks if node is not in testMode
+            if (!this.config.isTestMode())
+                isValid = isValid(block.getHeader());
 
             // Sanity checks
             String trieHash = toHexString(block.getTxTrieRoot());
