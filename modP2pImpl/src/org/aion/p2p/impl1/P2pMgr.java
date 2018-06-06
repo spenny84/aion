@@ -1,28 +1,25 @@
 /*
  * Copyright (c) 2017-2018 Aion foundation.
  *
- * This file is part of the aion network project.
+ *     This file is part of the aion network project.
  *
- * The aion network project is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation, either version 3 of
- * the License, or any later version.
+ *     The aion network project is free software: you can redistribute it
+ *     and/or modify it under the terms of the GNU General Public License
+ *     as published by the Free Software Foundation, either version 3 of
+ *     the License, or any later version.
  *
- * The aion network project is distributed in the hope that it will
- * be useful, but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
+ *     The aion network project is distributed in the hope that it will
+ *     be useful, but WITHOUT ANY WARRANTY; without even the implied
+ *     warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *     See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with the aion network project source files.
- * If not, see <https://www.gnu.org/licenses/>.
+ *     You should have received a copy of the GNU General Public License
+ *     along with the aion network project source files.
+ *     If not, see <https://www.gnu.org/licenses/>.
  *
- * Contributors to the aion source files in decreasing order of code volume:
- *
- * Aion foundation.
- *
+ * Contributors:
+ *     Aion foundation.
  */
-
 package org.aion.p2p.impl1;
 
 import java.io.IOException;
@@ -55,10 +52,6 @@ public final class P2pMgr implements IP2pMgr {
     private static final int PERIOD_REQUEST_ACTIVE_NODES = 1000;
     private static final int PERIOD_UPNP_PORT_MAPPING = 3600000;
     private static final int TIMEOUT_MSG_READ = 10000;
-
-    // TODO: need refactor by passing the parameter in the later version.
-    private static final int txBroadCastRoute =
-            (Ctrl.SYNC << 8) + 6; // ((Ver.V0 << 16) + (Ctrl.SYNC << 8) + 6);
 
     private final int maxTempNodes, maxActiveNodes, selfNetId, selfNodeIdHash, selfPort;
     private final boolean syncSeedsOnly, showStatus, showLog, upnpEnable;
@@ -156,11 +149,10 @@ public final class P2pMgr implements IP2pMgr {
             tcpServer.register(selector, SelectionKey.OP_ACCEPT);
 
             Thread thrdIn = new Thread(getInboundInstance(), "p2p-in");
-            //            Thread thrdIn = new Thread(new TaskInbound(), "p2p-in");
             thrdIn.setPriority(Thread.NORM_PRIORITY);
             thrdIn.start();
 
-            if (showLog)
+            if (showLog) {
                 this.handlers.forEach(
                     (route, callbacks) -> {
                         Handler handler = callbacks.get(0);
@@ -169,6 +161,7 @@ public final class P2pMgr implements IP2pMgr {
                             getRouteMsg(route, h.getVer(), h.getCtrl(), h.getAction(),
                                 handler.getClass().getSimpleName()));
                     });
+            }
 
             for (int i = 0; i < TaskSend.TOTAL_LANE; i++) {
                 Thread thrdOut = new Thread(getSendInstance(i), "p2p-out-" + i);
@@ -182,27 +175,27 @@ public final class P2pMgr implements IP2pMgr {
                 t.start();
             }
 
-            if (upnpEnable)
+            if (upnpEnable) {
                 scheduledWorkers.scheduleWithFixedDelay(
                     new TaskUPnPManager(selfPort),
                     1,
                     PERIOD_UPNP_PORT_MAPPING,
                     TimeUnit.MILLISECONDS);
-
-            if (showStatus)
+            }
+            if (showStatus) {
                 scheduledWorkers.scheduleWithFixedDelay(
                     getStatusInstance(),
                     2,
                     PERIOD_SHOW_STATUS,
                     TimeUnit.MILLISECONDS);
-
-            if (!syncSeedsOnly)
+            }
+            if (!syncSeedsOnly) {
                 scheduledWorkers.scheduleWithFixedDelay(
                     new TaskRequestActiveNodes(this),
                     5000,
                     PERIOD_REQUEST_ACTIVE_NODES,
                     TimeUnit.MILLISECONDS);
-
+            }
             Thread thrdClear = new Thread(getClearInstance(), "p2p-clear");
             thrdClear.setPriority(Thread.NORM_PRIORITY);
             thrdClear.start();
@@ -211,9 +204,9 @@ public final class P2pMgr implements IP2pMgr {
             thrdConn.setPriority(Thread.NORM_PRIORITY);
             thrdConn.start();
         } catch (SocketException e) {
-            if (showLog) System.out.println("<p2p tcp-server-socket-exception> " + e.getMessage());
+            if (showLog) { System.out.println("<p2p tcp-server-socket-exception> " + e.getMessage()); }
         } catch (IOException e) {
-            if (showLog) System.out.println("<p2p tcp-server-io-exception>");
+            if (showLog) { System.out.println("<p2p tcp-server-io-exception>"); }
         }
     }
 
@@ -280,14 +273,14 @@ public final class P2pMgr implements IP2pMgr {
 
     /** @param _sc SocketChannel */
     public void closeSocket(final SocketChannel _sc, String _reason) {
-        if (showLog) System.out.println("<p2p close-socket reason=" + _reason + ">");
+        if (showLog) { System.out.println("<p2p close-socket reason=" + _reason + ">"); }
 
         try {
             SelectionKey sk = _sc.keyFor(selector);
             _sc.close();
-            if (sk != null) sk.cancel();
+            if (sk != null) { sk.cancel(); }
         } catch (IOException e) {
-            if (showLog) System.out.println("<p2p close-socket-io-exception>");
+            if (showLog) { System.out.println("<p2p close-socket-io-exception>"); }
         }
     }
 
@@ -387,9 +380,6 @@ public final class P2pMgr implements IP2pMgr {
     public boolean isSyncSeedsOnly() {
         return this.syncSeedsOnly;
     }
-
-    @Override
-    public int getTxBroadCastRoute() { return this.txBroadCastRoute; }
 
     // <---------------------- message and Runnable getters below ------------------------->
 
