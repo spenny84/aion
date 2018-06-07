@@ -33,33 +33,59 @@
  * Bitcoinj team.
  */
 
-package org.aion.zero.impl.sync;
+package org.aion.zero.impl.sync.msg;
+
+import java.nio.ByteBuffer;
+import org.aion.p2p.Ctrl;
+import org.aion.p2p.Msg;
+import org.aion.p2p.Ver;
+import org.aion.zero.impl.sync.Act;
 
 /**
  * @author chris
  */
-public final class Act {
+public final class ReqAllBlocksHeaders extends Msg {
 
-    public static final byte REQ_STATUS = 0;
+    /**
+     * fromBlock(long), take(int)
+     */
+    private final static int len = 8 + 4;
 
-    public static final byte RES_STATUS = 1;
+    private final long fromBlock;
 
-    public static final byte REQ_BLOCKS_HEADERS = 2;
+    private final int take;
 
-    public static final byte RES_BLOCKS_HEADERS = 3;
+    public ReqAllBlocksHeaders(final long _fromBlock, final int _take) {
+        super(Ver.V0, Ctrl.SYNC, Act.REQ_ALL_BLOCKS_HEADERS);
+        this.fromBlock = _fromBlock;
+        this.take = _take;
+    }
 
-    public static final byte REQ_BLOCKS_BODIES = 4;
+    public long getFromBlock() {
+        return this.fromBlock;
+    }
 
-    public static final byte RES_BLOCKS_BODIES = 5;
+    public int getTake() {
+        return this.take;
+    }
 
-    public static final byte BROADCAST_TX = 6;
+    public static ReqAllBlocksHeaders decode(final byte[] _msgBytes) {
+        if (_msgBytes == null || _msgBytes.length != len)
+            return null;
+        else {
+            ByteBuffer bb = ByteBuffer.wrap(_msgBytes);
+            long _fromBlock = bb.getLong();
+            int _take = bb.getInt();
+            return new ReqAllBlocksHeaders(_fromBlock, _take);
+        }
+    }
 
-    public static final byte BROADCAST_BLOCK = 7;
-
-    public static final byte REQ_ALL_BLOCKS_HEADERS = 8;
-
-    public static final byte RES_ALL_BLOCK_HEADERS = 9;
-
-
+    @Override
+    public byte[] encode() {
+        ByteBuffer bb = ByteBuffer.allocate(len);
+        bb.putLong(this.fromBlock);
+        bb.putInt(this.take);
+        return bb.array();
+    }
 
 }

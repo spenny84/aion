@@ -1211,7 +1211,7 @@ public class AionBlockchainImpl implements IAionBlockchain {
      */
     @Override
     public List<A0BlockHeader> getListOfHeadersStartFrom(BlockIdentifier identifier, int skip, int limit,
-            boolean reverse) {
+            boolean reverse, boolean allblocks) {
 
         // Identifying block we'll move from
         IAionBlock startBlock;
@@ -1237,12 +1237,18 @@ public class AionBlockchainImpl implements IAionBlockchain {
         if (skip == 0) {
             long bestNumber = bestBlock.getNumber();
             headers = getContinuousHeaders(bestNumber, startBlock.getNumber(), limit, reverse);
+        } else if (allblocks == true) {
+            long bestNumber = bestBlock.getNumber();
+            headers = getAllContinuousHeaders(bestNumber, startBlock, limit, reverse);
         } else {
             headers = getGapedHeaders(startBlock, skip, limit, reverse);
         }
 
         return headers;
     }
+
+
+
 
     /**
      * Finds up to limit blocks starting from blockNumber on main chain
@@ -1307,6 +1313,36 @@ public class AionBlockchainImpl implements IAionBlockchain {
             } else {
                 headers.add(nextBlock.getHeader());
             }
+        }
+
+        return headers;
+    }
+
+    private List<A0BlockHeader> getAllContinuousHeaders(long bestNumber, IAionBlock startBlock, int limit, boolean reverse) {
+
+        List<A0BlockHeader> headers = new ArrayList<>();
+        long startBlockNum = startBlock.getNumber();
+
+        List<Map.Entry<AionBlock, Map.Entry<BigInteger, Boolean>>> blocks;
+        int qty = getQty(startBlockNum, bestNumber, limit, reverse);
+
+        for (int i= 0; i < qty; i++) {
+            blocks = repository.getBlockStore().getBlocksByNumber(startBlockNum);
+            if (blocks.size() == 0) { //No blocks
+                return emptyList();
+            }
+
+            if(blocks.size() > 1) //Make sure we don't get more blocks than the limit
+                qty -= blocks.size()-1;
+
+            for (Map.Entry<AionBlock, Map.Entry<BigInteger, Boolean>> block : blocks) {
+                headers.add(block.getKey().getHeader());
+            }
+        }
+
+        // blocks come with falling numbers
+        if (!reverse) {
+            Collections.reverse(headers);
         }
 
         return headers;

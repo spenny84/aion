@@ -77,7 +77,8 @@ public interface IBlockchain<BLK extends IBlock, BH extends AbstractBlockHeader,
 
     boolean isBlockExist(byte[] hash);
 
-    List<BH> getListOfHeadersStartFrom(BlockIdentifier identifier, int skip, int limit, boolean reverse);
+    List<BH> getListOfHeadersStartFrom(BlockIdentifier identifier, int skip, int limit, boolean reverse, boolean allblocks);
+
 
     List<byte[]> getListOfBodiesByHashes(List<byte[]> hashes);
 
