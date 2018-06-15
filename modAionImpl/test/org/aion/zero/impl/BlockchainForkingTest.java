@@ -34,6 +34,11 @@
  ******************************************************************************/
 package org.aion.zero.impl;
 
+import static com.google.common.truth.Truth.assertThat;
+
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
 import org.aion.base.util.BIUtil;
 import org.aion.base.util.ByteArrayWrapper;
 import org.aion.crypto.ECKey;
@@ -41,12 +46,6 @@ import org.aion.mcf.core.ImportResult;
 import org.aion.zero.impl.blockchain.ChainConfiguration;
 import org.aion.zero.impl.types.AionBlock;
 import org.junit.Test;
-
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
-
-import static com.google.common.truth.Truth.assertThat;
 
 public class BlockchainForkingTest {
 

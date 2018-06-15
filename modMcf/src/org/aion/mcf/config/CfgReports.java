@@ -176,4 +176,11 @@ public class CfgReports {
         return this.heap_dump_interval;
     }
 
+    public void setEnable() {
+        enable = true;
+    }
+
+    public void setHeapDumpEnable() {
+        enable_heap_dumps = true;
+    }
 }

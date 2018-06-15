@@ -33,6 +33,7 @@ import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.aion.base.db.IRepository;
+import org.aion.base.db.IRepositoryConfig;
 import org.aion.base.util.ByteUtil;
 import org.aion.evtmgr.EventMgrModule;
 import org.aion.evtmgr.IEvent;
@@ -78,6 +79,13 @@ public class AionHub {
 
     private static final Logger syncLOG = AionLoggerFactory.getLogger(LogEnum.SYNC.name());
 
+
+    private boolean backupTxLoaded = false;
+    private boolean reports = false;
+    private boolean headDump = false;
+
+    private Thread dumpHeap;
+
     private IP2pMgr p2pMgr;
 
     private CfgAion cfg;
@@ -106,6 +114,29 @@ public class AionHub {
      */
     private volatile AionBlock startingBlock;
 
+    /*for test*/
+    private static IRepositoryConfig testRepoCfg;
+
+    /*for test*/
+    public boolean isStart() {
+        return start.get();
+    }
+
+    /*for test*/
+    boolean isBackupTxLoaded() {
+        return backupTxLoaded;
+    }
+
+    /*for test*/
+    boolean isReports() {
+        return reports;
+    }
+
+    /*for test*/
+    boolean isHeadDump() {
+        return headDump;
+    }
+
     /**
      * Initialize as per the <a href= "https://en.wikipedia.org/wiki/Initialization-on-demand_holder_idiom">Initialization-on-demand</a>
      * holder pattern
@@ -119,6 +150,11 @@ public class AionHub {
         return Holder.INSTANCE;
     }
 
+    static AionHub createHubForTest(IRepositoryConfig repoConfig) {
+        testRepoCfg = repoConfig;
+        return new AionHub();
+    }
+
     public AionHub() {
 
         this.cfg = CfgAion.inst();
@@ -130,7 +166,8 @@ public class AionHub {
         blockchain.setEventManager(this.eventMgr);
         this.blockchain = blockchain;
 
-        this.repository = AionRepositoryImpl.inst();
+        this.repository = testRepoCfg == null ? AionRepositoryImpl.inst()
+            : AionRepositoryImpl.createForTesting(testRepoCfg);
 
         this.mempool = AionPendingStateImpl.inst();
 
@@ -144,6 +181,7 @@ public class AionHub {
 
             if (cfg.getTx().getPoolBackup()) {
                 this.mempool.loadPendingTx();
+                backupTxLoaded = true;
             }
         } else {
             genLOG.info("Seed node mode enabled!");
@@ -154,6 +192,7 @@ public class AionHub {
             File rpf = new File(cfg.getBasePath(), cfg.getReports().getPath());
             rpf.mkdirs();
             reportsFolder = rpf.getAbsolutePath();
+            reports = true;
         }
 
         /*
@@ -187,10 +226,12 @@ public class AionHub {
         this.pow.init(blockchain, mempool, eventMgr);
 
         if (cfg.getReports().isHeapDumpEnabled()) {
-            new Thread(
+            dumpHeap = new Thread(
                 new TaskDumpHeap(this.start, cfg.getReports().getHeapDumpInterval(), reportsFolder),
-                "dump-heap")
-                .start();
+                "dump-heap");
+            dumpHeap.start();
+
+            headDump = true;
         }
     }
 
@@ -393,11 +434,12 @@ public class AionHub {
             blockchain.setTotalDifficulty(this.repository.getBlockStore().getTotalDifficulty());
             if (bestBlock.getCumulativeDifficulty().equals(BigInteger.ZERO)) {
                 // setting the object runtime value
-                bestBlock.setCumulativeDifficulty(this.repository.getBlockStore().getTotalDifficulty());
+                bestBlock
+                    .setCumulativeDifficulty(this.repository.getBlockStore().getTotalDifficulty());
             }
 
             genLOG.info("loaded block <num={}, root={}>", blockchain.getBestBlock().getNumber(),
-                    LogUtil.toHexF8(blockchain.getBestBlock().getStateRoot()));
+                LogUtil.toHexF8(blockchain.getBestBlock().getStateRoot()));
         }
 
         byte[] genesisHash = cfg.getGenesis().getHash();
@@ -459,9 +501,15 @@ public class AionHub {
             }
         }
 
-        if (getPendingState() != null) {
-            getPendingState().shutDown();
+        if (mempool != null) {
+            mempool.shutDown();
             genLOG.info("<shutdown-pendingState>");
+        }
+
+        if (dumpHeap != null) {
+            dumpHeap.interrupt();
+            genLOG.info("<shutdown-heap dump thread>");
+
         }
 
         genLOG.info("shutting down consensus...");

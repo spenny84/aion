@@ -22,6 +22,13 @@
  */
 package org.aion.zero.impl;
 
+import static com.google.common.truth.Truth.assertThat;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.aion.base.db.IByteArrayKeyValueDatabase;
 import org.aion.base.util.ByteUtil;
 import org.aion.base.util.Hex;
@@ -32,10 +39,6 @@ import org.aion.zero.impl.db.AionRepositoryImpl;
 import org.aion.zero.impl.types.AionBlock;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.*;
-
-import static com.google.common.truth.Truth.assertThat;
 
 // import org.aion.mcf.trie.JournalPruneDataSource;
 

@@ -1,16 +1,15 @@
 package org.aion.zero.impl;
 
-import org.aion.zero.impl.types.AionBlock;
-import org.aion.zero.types.AionTransaction;
-import org.junit.Test;
+import static com.google.common.truth.Truth.assertThat;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static com.google.common.truth.Truth.assertThat;
+import org.aion.zero.impl.types.AionBlock;
+import org.aion.zero.types.AionTransaction;
+import org.junit.Test;
 
 public class BlockchainConcurrencyTest {
 
