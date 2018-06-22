@@ -1830,6 +1830,53 @@ public class ApiAion0 extends ApiAion implements IApiAion {
                         getApiVersion(), Retcode.r_fail_function_exception_VALUE);
                 }
             }
+            case Message.Funcs.f_getBlockDetailsByHash_VALUE: {
+                if (service != Message.Servs.s_admin_VALUE) {
+                    return ApiUtil.toReturnHeader(
+                        getApiVersion(), Retcode.r_fail_service_call_VALUE);
+                }
+
+                byte[] data = parseMsgReq(request, msgHash);
+                Message.req_getBlockDetailsByHash req;
+
+                try {
+                    req = Message.req_getBlockDetailsByHash.parseFrom(data);
+                    Hash256 blkHash = Hash256.wrap(req.getBlockHash().toByteArray());
+
+                    AionBlock blk = getBlockByHash(blkHash.toBytes());
+
+                    if (blk == null) {
+                        return ApiUtil.toReturnHeader(getApiVersion(), Retcode.r_fail_function_call_VALUE);
+                    }
+
+                    List<Map.Entry<AionBlock, BigInteger>> blks =
+                        getBlkAndDifficultyForBlkNumList(Collections.singletonList(blk.getNumber()));
+
+                    if (blks == null) {
+                        return ApiUtil.toReturnHeader(
+                            getApiVersion(), Retcode.r_fail_function_arguments_VALUE);
+                    } else {
+
+                        List<Message.t_BlockDetail> bds = getRsp_getBlockDetails(blks);
+                        Message.rsp_getBlockDetailsByHash rsp =
+                            Message.rsp_getBlockDetailsByHash
+                                .newBuilder()
+                                .setBlkDetails(bds.get(0))
+                                .build();
+
+                        byte[] retHeader =
+                            ApiUtil.toReturnHeader(
+                                getApiVersion(), Retcode.r_success_VALUE);
+                        return ApiUtil.combineRetMsg(retHeader, rsp.toByteArray());
+                    }
+                } catch (Exception e) {
+                    LOG.error(
+                        "ApiAion0.process.getBlockDetailsByNumber exception: [{}]",
+                        e.getMessage());
+                    return ApiUtil.toReturnHeader(
+                        getApiVersion(), Retcode.r_fail_function_exception_VALUE);
+                }
+            }
             case Message.Funcs.f_getBlockSqlByRange_VALUE: {
                 if (service != Message.Servs.s_admin_VALUE) {
                     return ApiUtil.toReturnHeader(
