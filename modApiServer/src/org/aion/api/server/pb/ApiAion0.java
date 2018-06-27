@@ -49,6 +49,7 @@ import java.util.stream.LongStream;
 import org.aion.api.server.ApiAion;
 import org.aion.api.server.ApiUtil;
 import org.aion.api.server.IApiAion;
+import org.aion.api.server.pb.Message.Funcs;
 import org.aion.api.server.pb.Message.Retcode;
 import org.aion.api.server.pb.Message.Servs;
 import org.aion.api.server.types.ArgTxCall;
@@ -61,6 +62,7 @@ import org.aion.api.server.types.SyncInfo;
 import org.aion.api.server.types.TxPendingStatus;
 import org.aion.api.server.types.TxRecpt;
 import org.aion.api.server.types.TxRecptLg;
+import org.aion.base.db.IRepository;
 import org.aion.base.type.Address;
 import org.aion.base.type.Hash256;
 import org.aion.base.type.IBlock;
@@ -78,6 +80,7 @@ import org.aion.evtmgr.impl.es.EventExecuteService;
 import org.aion.evtmgr.impl.evt.EventBlock;
 import org.aion.evtmgr.impl.evt.EventTx;
 import org.aion.mcf.account.Keystore;
+import org.aion.mcf.vm.types.DataWord;
 import org.aion.mcf.vm.types.Log;
 import org.aion.p2p.INode;
 import org.aion.solidity.Abi;
@@ -665,7 +668,7 @@ public class ApiAion0 extends ApiAion implements IApiAion {
                         Message.rsp_compile.Builder b = Message.rsp_compile.newBuilder();
 
                         for (Entry<String, CompiledContr> entry : _contrs.entrySet()) {
-                            if (entry.getKey().contains("AionCompileError")) {
+                            if (entry.getKey().contains("compile-error")) {
                                 byte[] retHeader =
                                     ApiUtil.toReturnHeader(
                                         getApiVersion(),
@@ -2471,6 +2474,62 @@ public class ApiAion0 extends ApiAion implements IApiAion {
                         e.getMessage());
                     return ApiUtil.toReturnHeader(
                         getApiVersion(), Retcode.r_fail_function_exception_VALUE);
+                }
+            }
+            case Funcs.f_getStorageAt_VALUE: {
+                if (service != Message.Servs.s_chain_VALUE) {
+                    return ApiUtil.toReturnHeader(
+                        getApiVersion(), Message.Retcode.r_fail_service_call_VALUE);
+                }
+
+                byte[] data = parseMsgReq(request, msgHash);
+                String storage = null;
+                try {
+                    Message.req_getStorageAt req = Message.req_getStorageAt.parseFrom(data);
+
+                    Address addr = Address.wrap(req.getAddress().toByteArray());
+                    int position = req.getPosition();
+                    long blockNumber = req.getBlocknumber();
+
+                    DataWord key;
+                    try {
+                        key = new DataWord(ByteUtil.intToBytes(position));
+                    } catch (Exception e) {
+                        // invalid key
+                        LOG.debug("ApiAionA0.process.getStorageAt: invalid storageIndex. Must be <= 16 bytes.");
+                        LOG.error("ApiAionA0.process.getStorageAt exception: [{}]", e.getMessage());
+                        return ApiUtil.toReturnHeader(
+                            getApiVersion(), Retcode.r_fail_function_arguments_VALUE);
+                    }
+
+                    IRepository repo = this.ac.getRepository();
+
+                    @SuppressWarnings("unchecked")
+                    DataWord storageValue = (DataWord) repo.getStorageValue(addr, key);
+
+                    if (storageValue != null) {
+                        storage = ByteUtil.toHexString(storageValue.getData());
+                    }
+                } catch (InvalidProtocolBufferException e) {
+                    LOG.error("ApiAionA0.process.getStorageAt exception: [{}]", e.getMessage());
+                    return ApiUtil.toReturnHeader(
+                        getApiVersion(), Message.Retcode.r_fail_function_exception_VALUE);
+                }
+
+                if (storage == null) {
+                    return ApiUtil.toReturnHeader(
+                        getApiVersion(), Retcode.r_fail_null_rsp_VALUE);
+                } else {
+                    Message.rsp_getStorageAt rsp =
+                        Message.rsp_getStorageAt
+                            .newBuilder()
+                            .setStorage(storage)
+                            .build();
+
+                    byte[] retHeader =
+                        ApiUtil.toReturnHeader(
+                            getApiVersion(), Message.Retcode.r_success_VALUE);
+                    return ApiUtil.combineRetMsg(retHeader, rsp.toByteArray());
                 }
             }
 
