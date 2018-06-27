@@ -1352,7 +1352,8 @@ public class ApiAion0 extends ApiAion implements IApiAion {
                             .setChainBestBlock(sync.chainBestBlkNumber)
                             .setNetworkBestBlock(sync.networkBestBlkNumber)
                             .setSyncing(!sync.done)
-                            .setMaxImportBlocks(24)
+                            .setMaxImportBlocks(CfgAion.inst().getSync().getBlocksQueueMax())
+                            .setStartingBlock(sync.chainStartingBlkNumber)
                             .build();
 
                     byte[] retHeader =
@@ -1849,11 +1850,13 @@ public class ApiAion0 extends ApiAion implements IApiAion {
                     AionBlock blk = getBlockByHash(blkHash.toBytes());
 
                     if (blk == null) {
-                        return ApiUtil.toReturnHeader(getApiVersion(), Retcode.r_fail_function_call_VALUE);
+                        return ApiUtil
+                            .toReturnHeader(getApiVersion(), Retcode.r_fail_function_call_VALUE);
                     }
 
                     List<Map.Entry<AionBlock, BigInteger>> blks =
-                        getBlkAndDifficultyForBlkNumList(Collections.singletonList(blk.getNumber()));
+                        getBlkAndDifficultyForBlkNumList(
+                            Collections.singletonList(blk.getNumber()));
 
                     if (blks == null) {
                         return ApiUtil.toReturnHeader(
@@ -2496,7 +2499,8 @@ public class ApiAion0 extends ApiAion implements IApiAion {
                         key = new DataWord(ByteUtil.intToBytes(position));
                     } catch (Exception e) {
                         // invalid key
-                        LOG.debug("ApiAionA0.process.getStorageAt: invalid storageIndex. Must be <= 16 bytes.");
+                        LOG.debug(
+                            "ApiAionA0.process.getStorageAt: invalid storageIndex. Must be <= 16 bytes.");
                         LOG.error("ApiAionA0.process.getStorageAt exception: [{}]", e.getMessage());
                         return ApiUtil.toReturnHeader(
                             getApiVersion(), Retcode.r_fail_function_arguments_VALUE);
@@ -2532,7 +2536,48 @@ public class ApiAion0 extends ApiAion implements IApiAion {
                     return ApiUtil.combineRetMsg(retHeader, rsp.toByteArray());
                 }
             }
+            case Funcs.f_listening_VALUE: {
+                if (service != Message.Servs.s_net_VALUE) {
+                    return ApiUtil.toReturnHeader(
+                        getApiVersion(), Retcode.r_fail_service_call_VALUE);
+                }
 
+                // currently, p2p manager is always listening for peers and is active
+                try {
+                    Message.rsp_listening rsp =
+                        Message.rsp_listening.newBuilder().setIsListening(true).build();
+                    byte[] retHeader =
+                        ApiUtil.toReturnHeader(getApiVersion(), Retcode.r_success_VALUE);
+                    return ApiUtil.combineRetMsg(retHeader, rsp.toByteArray());
+                } catch (Exception e) {
+                    LOG.error(
+                        "ApiAion0.process.listening exception: [{}]", e.getMessage());
+                    return ApiUtil.toReturnHeader(
+                        getApiVersion(), Retcode.r_fail_function_exception_VALUE);
+                }
+            }
+            case Funcs.f_peerCount_VALUE: {
+                if (service != Message.Servs.s_net_VALUE) {
+                    return ApiUtil.toReturnHeader(
+                        getApiVersion(), Retcode.r_fail_service_call_VALUE);
+                }
+
+                int count = this.ac.getAionHub().getP2pMgr().getActiveNodes().size();
+                try {
+                    Message.rsp_peerCount rsp =
+                        Message.rsp_peerCount.newBuilder()
+                            .setPeers(count)
+                            .build();
+                    byte[] retHeader =
+                        ApiUtil.toReturnHeader(getApiVersion(), Retcode.r_success_VALUE);
+                    return ApiUtil.combineRetMsg(retHeader, rsp.toByteArray());
+                } catch (Exception e) {
+                    LOG.error(
+                        "ApiAion0.process.listening exception: [{}]", e.getMessage());
+                    return ApiUtil.toReturnHeader(
+                        getApiVersion(), Retcode.r_fail_function_exception_VALUE);
+                }
+            }
             // case Message.Funcs.f_eventQuery_VALUE:
             // case Message.Funcs.f_submitWork_VALUE:
             // case Message.Funcs.f_getWork_VALUE:
