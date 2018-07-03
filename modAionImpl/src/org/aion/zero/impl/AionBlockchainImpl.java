@@ -1114,6 +1114,11 @@ public class AionBlockchainImpl implements IAionBlockchain {
         setBestBlock(block);
     }
 
+    @Override
+    public void storePendingBlock(AionBlock block) {
+        repository.getPendingBlockStore().addBlock(block);
+    }
+
     public boolean hasParentOnTheChain(AionBlock block) {
         return getParent(block.getHeader()) != null;
     }

@@ -55,6 +55,8 @@ public interface IBlockchain<BLK extends IBlock, BH extends AbstractBlockHeader,
 
     void storeBlock(BLK block, List<TR> receipts);
 
+    void storePendingBlock(BLK block);
+
     void setBestBlock(BLK block);
 
     boolean hasParentOnTheChain(BLK block);
