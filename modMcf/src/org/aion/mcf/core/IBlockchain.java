@@ -65,7 +65,7 @@ public interface IBlockchain<
 
     int storePendingBlockRange(List<BLK> blocks);
 
-    List<BLK> loadPendingBlockRange(long first, long last);
+    List<BLK> loadPendingBlocksAtLevel(long level);
 
     long nextBase(long current);
 
