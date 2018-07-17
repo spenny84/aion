@@ -14,8 +14,8 @@ fi
 # download jre9 if can't find the jre env
 if [ ! -d "$JDK_PATH" ]; then
   wget -nc --no-check-certificate --no-cookies --header "Cookie: oraclelicense=accept-securebackup-cookie" "http://download.oracle.com/otn-pub/java/jdk/10.0.2+13/19aef61b38124481863b1413dce1855f/jdk-10.0.2_linux-x64_bin.tar.gz" -O $PACK_PATH/jdk-10.0.2_linux-x64_bin.tar.gz
-  tar -xf $PACK_PATH/jdk-10.0.1_linux-x64_bin.tar.gz -C $PACK_PATH
-  mv $PACK_PATH/jdk-10.0.1 $JDK_PATH
+  tar -xf $PACK_PATH/jdk-10.0.2_linux-x64_bin.tar.gz -C $PACK_PATH
+  mv $PACK_PATH/jdk-10.0.2 $JDK_PATH
 fi
 
 # generate aion runtime
