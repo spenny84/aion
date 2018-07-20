@@ -480,6 +480,7 @@ final class TaskImportBlocks implements Runnable {
         // switch to NORMAL if in FORWARD mode
         if (importResult.isBest() && state.getMode() == Mode.FORWARD) {
             state.setMode(Mode.NORMAL);
+            state.setBase(chain.getBestBlock().getNumber());
         }
 
         return imported;
