@@ -305,13 +305,13 @@ public class AionAuctionContract extends StatefulPrecompiledContract {
 
         // check if domain is currently active, but have not been extended
         if(expireDateFromStorage.getTime() < currentDate.getTime() || difference > ACTIVE_TIME.intValue()) {
-            return new ExecutionResult(ResultCode.INTERNAL_ERROR, COST - nrg, "already been extended".getBytes());
+            return new ExecutionResult(ResultCode.INTERNAL_ERROR, nrg - COST, "already been extended".getBytes());
         }
 
         // add the new expire date
         Date finishDate = new Date(expireDateFromStorage.getTime() + ACTIVE_TIME.intValue()); //extend for 1 period
         addDateToStorage(activeDomainsAddressTime, domainAddress, finishDate);
-        return new ExecutionResult(ResultCode.SUCCESS, COST - nrg );
+        return new ExecutionResult(ResultCode.SUCCESS, nrg - COST);
     }
 
     /**
