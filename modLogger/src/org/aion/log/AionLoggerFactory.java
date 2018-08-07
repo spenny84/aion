@@ -87,9 +87,11 @@ public class AionLoggerFactory {
     private static Map<LogEnum, Level> constructModuleLoglevelMap(Map<String, String> _moduleToLevelMap) {
         // condition the input hashmap so keys are all uppercase
         Map<String, String> moduleToLevelMap = new HashMap<>();
-        _moduleToLevelMap.forEach((module, level) -> {
-            moduleToLevelMap.put(module.toUpperCase(), level);
-        });
+        if (_moduleToLevelMap != null) {
+            _moduleToLevelMap.forEach((module, level) -> {
+                moduleToLevelMap.put(module.toUpperCase(), level);
+            });
+        }
 
         Map<LogEnum, Level> modules = new HashMap<>();
         for (LogEnum mod : LogEnum.values()) {
