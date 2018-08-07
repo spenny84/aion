@@ -38,7 +38,7 @@
  *
  */
 
-package org.aion.api.server.http;
+package org.aion.api.server.rpc;
 
 import static org.aion.base.util.ByteUtil.hexStringToBytes;
 import static org.aion.base.util.ByteUtil.toHexString;
@@ -107,6 +107,7 @@ import org.aion.mcf.config.CfgApiRpc;
 import org.aion.mcf.config.CfgApiZmq;
 import org.aion.mcf.config.CfgNet;
 import org.aion.mcf.config.CfgNetP2p;
+import org.aion.mcf.config.CfgSsl;
 import org.aion.mcf.config.CfgSync;
 import org.aion.mcf.config.CfgTx;
 import org.aion.mcf.core.AccountState;
@@ -439,7 +440,7 @@ public class ApiWeb3Aion extends ApiAion {
         Address address = new Address(_address);
 
         String bnOrId = "latest";
-        if (_bnOrId != null && !_bnOrId.equals(JSONObject.NULL))
+        if (!JSONObject.NULL.equals(_bnOrId))
             bnOrId = _bnOrId + "";
 
         if (!bnOrId.equalsIgnoreCase("latest")) {
@@ -478,7 +479,7 @@ public class ApiWeb3Aion extends ApiAion {
         Address address = new Address(_address);
 
         String bnOrId = "latest";
-        if (_bnOrId != null && !_bnOrId.equals(JSONObject.NULL))
+        if (!JSONObject.NULL.equals(_bnOrId))
             bnOrId = _bnOrId + "";
 
         DataWord key;
@@ -528,7 +529,7 @@ public class ApiWeb3Aion extends ApiAion {
         Address address = new Address(_address);
 
         String bnOrId = "latest";
-        if (_bnOrId != null && !_bnOrId.equals(JSONObject.NULL))
+        if (!JSONObject.NULL.equals(_bnOrId))
             bnOrId = _bnOrId + "";
 
         if (!bnOrId.equalsIgnoreCase("latest")) {
@@ -609,7 +610,7 @@ public class ApiWeb3Aion extends ApiAion {
         Address address = new Address(_address);
 
         String bnOrId = "latest";
-        if (_bnOrId != null && !_bnOrId.equals(JSONObject.NULL))
+        if (!JSONObject.NULL.equals(_bnOrId))
             bnOrId = _bnOrId + "";
 
         if (!bnOrId.equalsIgnoreCase("latest")) {
@@ -713,7 +714,7 @@ public class ApiWeb3Aion extends ApiAion {
         ArgTxCall txParams = ArgTxCall.fromJSON(_tx, getNrgOracle(), getDefaultNrgLimit());
 
         String bnOrId = "latest";
-        if (_bnOrId != null && !_bnOrId.equals(JSONObject.NULL))
+        if (!JSONObject.NULL.equals(_bnOrId))
             bnOrId = _bnOrId + "";
 
         Long bn = parseBnOrId(bnOrId);
@@ -1156,7 +1157,7 @@ public class ApiWeb3Aion extends ApiAion {
         }
 
         int duration = 300;
-        if (_duration != null && !_duration.equals(JSONObject.NULL))
+        if (!JSONObject.NULL.equals(_duration))
             duration = new BigInteger(_duration + "").intValueExact();
 
         return new RpcMsg(unlockAccount(_account, _password, duration));
@@ -1596,12 +1597,16 @@ public class ApiWeb3Aion extends ApiAion {
 
         // base.api.rpc
         CfgApiRpc rpcConfig = config.getRpc();
+        CfgSsl sslConfig = rpcConfig.getSsl();
         JSONObject rpc = new JSONObject();
         rpc.put("ip", rpcConfig.getIp());
         rpc.put("port", rpcConfig.getPort());
         rpc.put("corsEnabled", rpcConfig.getCorsEnabled());
         rpc.put("active", rpcConfig.getActive());
         rpc.put("maxThread", rpcConfig.getMaxthread());
+        rpc.put("sslEnabled", sslConfig.getEnabled());
+        rpc.put("sslCert", sslConfig.getCert());
+        rpc.put("sslPass", sslConfig.getPass());
 
         // end
         obj.put("rpc", rpc);
@@ -2268,9 +2273,7 @@ public class ApiWeb3Aion extends ApiAion {
 
         JSONObject obj = new JSONObject();
 
-        if (nce != null && soln != null && hdrHash != null &&
-                !nce.equals(JSONObject.NULL) && !soln.equals(JSONObject.NULL) && !hdrHash.equals(JSONObject.NULL)) {
-
+        if (!JSONObject.NULL.equals(nce) && !JSONObject.NULL.equals(soln) && !JSONObject.NULL.equals(hdrHash)) {
             try {
                 templateMapLock.writeLock().lock();
 
@@ -2327,7 +2330,7 @@ public class ApiWeb3Aion extends ApiAion {
 
         JSONObject obj = new JSONObject();
 
-        if (_blockNum != null && !_blockNum.equals(JSONObject.NULL)) {
+        if (!JSONObject.NULL.equals(_blockNum)) {
             String bnStr = _blockNum + "";
             try {
                 int bnInt = Integer.decode(bnStr);
