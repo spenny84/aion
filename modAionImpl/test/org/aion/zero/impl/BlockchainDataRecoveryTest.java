@@ -25,6 +25,7 @@ package org.aion.zero.impl;
 import static com.google.common.truth.Truth.assertThat;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,11 @@ import org.aion.zero.types.AionTransaction;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** @author Alexandra Roatis */
+// import org.aion.mcf.trie.JournalPruneDataSource;
+
+/**
+ * @author Alexandra Roatis
+ */
 public class BlockchainDataRecoveryTest {
 
     private static final List<ECKey> accounts = BlockchainTestUtils.generateAccounts(10);

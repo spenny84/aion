@@ -34,18 +34,17 @@
  ******************************************************************************/
 package org.aion.zero.impl;
 
-import org.aion.base.type.Address;
-import org.aion.mcf.blockchain.IBlockConstants;
-import org.aion.zero.api.BlockConstants;
-import org.aion.zero.impl.types.AionBlock;
-import org.aion.mcf.core.ImportResult;
-import org.junit.Ignore;
-import org.junit.Test;
+import static com.google.common.truth.Truth.assertThat;
 
 import java.math.BigInteger;
 import java.util.Collections;
-
-import static com.google.common.truth.Truth.assertThat;
+import org.aion.base.type.Address;
+import org.aion.mcf.blockchain.IBlockConstants;
+import org.aion.mcf.core.ImportResult;
+import org.aion.zero.api.BlockConstants;
+import org.aion.zero.impl.types.AionBlock;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class BlockchainRewardTest {
 

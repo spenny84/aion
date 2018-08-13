@@ -67,6 +67,8 @@ public abstract class AbstractEventMgr {
                 m.getKey().stop();
             }
         }
+
+        handlers.clear();
     }
 
     public List<IHandler> getHandlerList() {

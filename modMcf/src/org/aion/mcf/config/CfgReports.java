@@ -194,6 +194,16 @@ public class CfgReports {
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(print, enable, path, dump_interval, block_frequency, enable_heap_dumps, heap_dump_interval);
+        return Objects
+            .hashCode(print, enable, path, dump_interval, block_frequency, enable_heap_dumps,
+                heap_dump_interval);
+    }
+
+    public void setEnable() {
+        enable = true;
+    }
+
+    public void setHeapDumpEnable() {
+        enable_heap_dumps = true;
     }
 }

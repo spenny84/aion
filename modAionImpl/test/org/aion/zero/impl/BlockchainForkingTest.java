@@ -46,12 +46,6 @@ import org.aion.zero.impl.blockchain.ChainConfiguration;
 import org.aion.zero.impl.types.AionBlock;
 import org.junit.Test;
 
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
-
-import static com.google.common.truth.Truth.assertThat;
-
 public class BlockchainForkingTest {
 
     /*-

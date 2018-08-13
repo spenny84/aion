@@ -57,33 +57,33 @@ public class CfgTx {
         while (sr.hasNext()) {
             int eventType = sr.next();
             switch (eventType) {
-            case XMLStreamReader.START_ELEMENT:
-                String elementName = sr.getLocalName().toLowerCase();
-                switch (elementName) {
-                case "cachemax":
-                    this.cacheMax = Integer.parseInt(Cfg.readValue(sr));
-                    if (this.cacheMax < 128) {
-                        this.cacheMax = 128;
-                    } else if (this.cacheMax > 16384) { // 16GB
-                        this.cacheMax = 16384;
+                case XMLStreamReader.START_ELEMENT:
+                    String elementName = sr.getLocalName().toLowerCase();
+                    switch (elementName) {
+                        case "cachemax":
+                            this.cacheMax = Integer.parseInt(Cfg.readValue(sr));
+                            if (this.cacheMax < 128) {
+                                this.cacheMax = 128;
+                            } else if (this.cacheMax > 16384) { // 16GB
+                                this.cacheMax = 16384;
+                            }
+                            break;
+                        case "buffer":
+                            this.buffer = Boolean.parseBoolean(Cfg.readValue(sr));
+                            break;
+                        case "pooldump":
+                            this.poolDump = Boolean.parseBoolean(Cfg.readValue(sr));
+                            break;
+                        case "poolbackup":
+                            this.poolBackup = Boolean.parseBoolean(Cfg.readValue(sr));
+                            break;
+                        default:
+                            Cfg.skipElement(sr);
+                            break;
                     }
                     break;
-                case "buffer":
-                    this.buffer = Boolean.parseBoolean(Cfg.readValue(sr));
-                    break;
-                case "pooldump":
-                    this.poolDump = Boolean.parseBoolean(Cfg.readValue(sr));
-                    break;
-                    case "poolbackup":
-                        this.poolBackup = Boolean.parseBoolean(Cfg.readValue(sr));
-                        break;
-                default:
-                    Cfg.skipElement(sr);
-                    break;
-                }
-                break;
-            case XMLStreamReader.END_ELEMENT:
-                break loop;
+                case XMLStreamReader.END_ELEMENT:
+                    break loop;
             }
         }
     }
@@ -147,6 +147,10 @@ public class CfgTx {
     @Override
     public int hashCode() {
         return Objects.hashCode(cacheMax, buffer, poolDump, poolBackup);
+    }
+
+    public void setPoolBackup(boolean set) {
+        poolBackup = set;
     }
 }
 
