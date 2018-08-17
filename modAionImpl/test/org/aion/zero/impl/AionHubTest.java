@@ -46,8 +46,11 @@ import org.aion.zero.impl.types.AionBlock;
 import org.aion.zero.types.AionTransaction;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AionHubTest {
 
     private void checkHubNullity(AionHub hub) {
@@ -138,11 +141,6 @@ public class AionHubTest {
                 }
             }
         }
-    }
-
-    @Test
-    public void AionHubGetRepoVersion() {
-        assertThat(AionHub.getRepoVersion()).isEqualTo(Version.REPO_VERSION);
     }
 
     @Test
